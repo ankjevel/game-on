@@ -1,16 +1,18 @@
 module.exports = {
-  ...require('../jest.common'),
-  displayName: 'API',
   preset: 'ts-jest',
   testEnvironment: 'node',
-  testPathIgnorePatterns: ['<rootDir>/dist'],
   globals: {
     'ts-jest': {
       diagnostics: false,
     },
   },
+  clearMocks: true,
   watchPlugins: [
     'jest-watch-typeahead/filename',
     'jest-watch-typeahead/testname',
   ],
+  setupFilesAfterEnv: ['jest-expect-message'],
+  coveragePathIgnorePatterns: ['node_modules', '__fixtures__'],
+  coverageReporters: ['text'],
 }
+
