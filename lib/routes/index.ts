@@ -1,9 +1,12 @@
 import { Application } from 'express'
 import { packageJSON } from '../config'
 import * as dataStore from '../services/dataStore'
+
+import * as groupService from '../services/group'
 import { StoreTypes } from '../types/dataStore'
 import hasProp from '../utils/hasProp'
 import isNumber from '../utils/isNumber'
+import toEnum from '../utils/toEnum'
 
 export default (app: Application) => {
   app.get('/', (_req, res) => res.send(packageJSON))
@@ -25,16 +28,21 @@ export default (app: Application) => {
           )
         : undefined
 
-    res.send(await dataStore.create({ name, startSum }))
+    res.send(await groupService.newGroup({ name, startSum }))
   })
 
-  app.get('/get/:id', async ({ params: { id } }, res) => {
-    res.send(await dataStore.get({ id }))
-  })
-  app.get('/get/user/:id', async ({ params: { id } }, res) => {
-    res.send(await dataStore.get({ type: StoreTypes.User, id }))
-  })
-  app.get('/get/group/:id', async ({ params: { id } }, res) => {
-    res.send(await dataStore.get({ type: StoreTypes.Group, id }))
-  })
+  app.get(
+    '/get/:id/:type?',
+    async ({ params: { id, type: maybeType } }, res) => {
+      const type = toEnum<StoreTypes>(maybeType, StoreTypes)
+
+      if (type != null) {
+        res.send(await dataStore.get({ id, type }))
+      } else {
+        res.send(await dataStore.get({ id }))
+      }
+
+      console.log('result', type, id)
+    }
+  )
 }

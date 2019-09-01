@@ -2,47 +2,62 @@ import uuid from 'uuid'
 import redis from '../adapters/redis'
 import parse from '../utils/parse'
 
-import { StoreTypes, Group, CreateInput, GetResult } from '../types/dataStore'
-export { StoreTypes, Group, CreateInput, GetResult }
+import {
+  Action,
+  CreateInput,
+  GetResult,
+  Group,
+  isAction,
+  isGroup,
+  isUser,
+  StoreTypes,
+  User,
+} from '../types/dataStore'
+export { StoreTypes, User, Group, CreateInput, GetResult }
 
 const client = redis()
 
 const newId = (type: StoreTypes) => `${type}:${uuid.v4()}`
 
-const createNewId = async (type: StoreTypes): Promise<string> => {
+export const create = async <T extends Group | Action | User>(
+  type: StoreTypes,
+  format: (id: string) => T
+): Promise<T> => {
   const id = newId(type)
 
   if (await client.get(id)) {
-    return await createNewId(type)
+    return await create(type, format)
   }
 
-  await client.set(id, '')
+  const object = format(id)
 
-  return id
+  await client.set(
+    id,
+    typeof object === 'string' ? object : JSON.stringify(object)
+  )
+
+  return object
 }
 
-export const create = async (
-  query: CreateInput
-): Promise<
-  //Group
-  any
-> => {
-  console.log(query)
-  // const userId = await createNewId(StoreTypes.User)
-  // const groupId = await createNewId(StoreTypes.Group)
+export const update = async <T extends Group | Action | User>(
+  id: T['id'],
+  data: T
+) => {
+  if (id !== data.id) {
+    return
+  }
 
-  // const data = {
-  // 	id: groupId,
-  // 	users: [userId],
-  // }
+  const prev = await get({ id })
 
-  // client.set(groupId, JSON.stringify(data))
+  if (prev == null) {
+    return
+  }
 
-  // return data
+  await client.set(id, {
+    ...prev,
+    ...data,
+  })
 }
-
-export const update = () => {}
-
 
 export const get = async ({
   type,
@@ -51,20 +66,45 @@ export const get = async ({
   type?: StoreTypes
   id: string
 }): Promise<GetResult> => {
-  const result = await client.get(id.includes(':') ? id : `${type}:${id}`)
+  const query =
+    id.includes(':') === false
+      ? type == null
+        ? null
+        : `${type}:${id}`
+      : type != null && id.split(':')[0] != type
+      ? null
+      : id
+
+  if (query == null) {
+    return null
+  }
+
+  const result = await client.get(query)
 
   if (result === null) {
     return null
   }
 
-  if (type === 'user' || id.includes(StoreTypes.User)) {
-    return result
-  }
-
   try {
-    return parse<Group>(result)
+    if (type === StoreTypes.User || id.includes(StoreTypes.User)) {
+      const parsed = parse<User>(result)
+      return isUser(parsed) ? parsed : null
+    }
+
+    if (type === StoreTypes.Group || id.includes(StoreTypes.Group)) {
+      const parsed = parse<Group>(result)
+      return isGroup(parsed) ? parsed : null
+    }
+
+    if (type === StoreTypes.Action || id.includes(StoreTypes.Action)) {
+      const parsed = parse<Action>(result)
+      return isAction(parsed) ? parsed : null
+    }
+
   } catch (error) {
     console.error(result, error)
     return null
   }
+
+  return null
 }

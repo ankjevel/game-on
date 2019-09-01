@@ -1,4 +1,4 @@
-export default (input?: any): boolean => {
+export const isNumber = (input?: any): boolean => {
 	if (typeof input === 'number') {
 		return !isNaN(input)
 	}
@@ -9,3 +9,5 @@ export default (input?: any): boolean => {
 
   return !isNaN(Number(input))
 }
+
+export default isNumber

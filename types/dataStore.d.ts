@@ -1,6 +1,18 @@
+export type Action = {
+  id: string
+  lastAction?: string
+}
+
+export type User = {
+  id: string
+}
+
 export type Group = {
   id: string
-  users: string[]
+  name: string
+  startSum: number
+  users: User[]
+  action?: Action
 }
 
 export type CreateInput = {
@@ -8,4 +20,4 @@ export type CreateInput = {
   startSum?: number
 }
 
-export type GetResult = null | string | Group
+export type GetResult = null | User | Group | Action
