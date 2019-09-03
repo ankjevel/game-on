@@ -19,8 +19,6 @@ export const messageListener = (
     }
 
     await onMessage(message)
-
-    await wait(100)
     await unlock(channel)
 
     messageListener(channel, onMessage)

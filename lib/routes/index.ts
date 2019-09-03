@@ -14,7 +14,7 @@ export default (app: Application) => {
   app.get('/', (_req, res) => res.send(packageJSON))
   app.get('/favicon.ico', (_req, res) => res.status(404).send(null))
 
-  app.get('/new', async ({ query }, res) => {
+  app.get('/new-group', async ({ query }, res) => {
     const name: string | undefined =
       hasProp(query, 'name') && typeof query.name === 'string'
         ? query.name.substr(0, 255)
