@@ -77,12 +77,12 @@ export const create = async <T extends Types>(
 export const all = async (prefix: StoreTypes) =>
   (await client.keys(`${prefix}:*`)) || []
 
-export const update = async <T extends Types>(id: T['id'], data: T) => {
+export const update = async <T extends Types>(id: T['id'], data: T, check: Check) => {
   if (id !== data.id) {
     return
   }
 
-  const prev = await get({ id })
+  const prev = await get({ id, check })
 
   if (prev == null) {
     return
@@ -94,13 +94,18 @@ export const update = async <T extends Types>(id: T['id'], data: T) => {
   })
 }
 
-export const get = async ({
+type MaybeNull<T> = T | null
+type Check = <T>(result: MaybeNull<T>) => boolean
+
+export const get = async <T extends Types>({
   type,
   id,
+  check,
 }: {
-  type?: StoreTypes
+  type: StoreTypes
   id: string
-}): Promise<Types | null> => {
+  check: Check
+}): Promise<MaybeNull<T>> => {
   const query =
     id.includes(':') === false
       ? type == null
@@ -120,19 +125,9 @@ export const get = async ({
   }
 
   try {
-    if (type === StoreTypes.User || id.includes(StoreTypes.User)) {
-      const parsed = parse<User>(result)
-      return isUser(parsed) ? parsed : null
-    }
-
-    if (type === StoreTypes.Group || id.includes(StoreTypes.Group)) {
-      const parsed = parse<Group>(result)
-      return isGroup(parsed) ? parsed : null
-    }
-
-    if (type === StoreTypes.Action || id.includes(StoreTypes.Action)) {
-      const parsed = parse<Action>(result)
-      return isAction(parsed) ? parsed : null
+    if (id.includes(type)) {
+      const parsed = parse<T>(result)
+      return check(parsed) ? parsed : null
     }
   } catch (error) {
     console.error(result, error)
@@ -141,3 +136,6 @@ export const get = async ({
 
   return null
 }
+
+/// get<User>({ id: 'hello'})
+// get({ id: hello }) as User | null

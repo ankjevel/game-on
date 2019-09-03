@@ -1,5 +1,6 @@
 import { CreateUserInput, User } from 'dataStore'
 import { create, StoreTypes, all, get } from './dataStore'
+import { isUser } from '../types/dataStore'
 
 export const newUser = async ({
   name,
@@ -18,7 +19,7 @@ export const checkDuplicate = async ({ id, email }: User) => {
   }
 
   for (const key of keys) {
-    const res = (await get({ id: key, type: StoreTypes.User })) as User | null
+    const res = (await get<User>({ id: key, type: StoreTypes.User, check: isUser }))
 
     if (!res) {
       continue
