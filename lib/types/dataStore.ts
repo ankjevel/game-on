@@ -1,6 +1,13 @@
 import hasProp from '../utils/hasProp'
-import { Action, Group, User, CreateInput, GetResult } from 'dataStore'
-export { Action, Group, User, CreateInput, GetResult }
+import {
+  Action,
+  Group,
+  User,
+  CreateGroupInput,
+  CreateUserInput,
+  GetResult,
+} from 'dataStore'
+export { Action, Group, User, CreateGroupInput, CreateUserInput, GetResult }
 
 export enum StoreTypes {
   Action = 'action',

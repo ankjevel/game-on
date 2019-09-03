@@ -4,7 +4,8 @@ import parse from '../utils/parse'
 
 import {
   Action,
-  CreateInput,
+  CreateGroupInput,
+  CreateUserInput,
   GetResult,
   Group,
   isAction,
@@ -13,7 +14,7 @@ import {
   StoreTypes,
   User,
 } from '../types/dataStore'
-export { StoreTypes, User, Group, CreateInput, GetResult }
+export { StoreTypes, User, Group, CreateGroupInput, CreateUserInput, GetResult }
 
 const client = redis()
 
@@ -100,7 +101,6 @@ export const get = async ({
       const parsed = parse<Action>(result)
       return isAction(parsed) ? parsed : null
     }
-
   } catch (error) {
     console.error(result, error)
     return null

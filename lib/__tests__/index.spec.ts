@@ -4,7 +4,7 @@ import supertest from 'supertest'
 // import hasProp from '../utils/hasProp'
 
 import * as dataStore from '../services/dataStore'
-import { CreateInput } from 'dataStore'
+import { CreateGroupInput } from 'dataStore'
 
 jest.mock('../config', () => ({
   express: {
@@ -81,7 +81,9 @@ describe('setup', () => {
         users: [],
       }
 
-      const tests: ([string, CreateInput] | [string, CreateInput, string])[] = [
+      const tests: (
+        | [string, CreateGroupInput]
+        | [string, CreateGroupInput, string])[] = [
         ['/new-group', {}],
         ['/new-group?', {}],
         ['/new-group?name=foo', { name: 'foo' }],

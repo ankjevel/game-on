@@ -1,13 +1,14 @@
-export type Action = {
+export interface Action {
   id: string
   lastAction?: string
 }
 
-export type User = {
+export interface User {
   id: string
+  name: string
 }
 
-export type Group = {
+export interface Group {
   id: string
   name: string
   startSum: number
@@ -15,9 +16,31 @@ export type Group = {
   action?: Action
 }
 
-export type CreateInput = {
+// export type Action = {
+//   id: string
+//   lastAction?: string
+// }
+
+// export type User = {
+//   id: string
+//   name: string
+// }
+
+// export type Group = {
+//   id: string
+//   name: string
+//   startSum: number
+//   users: User[]
+//   action?: Action
+// }
+
+export type CreateGroupInput = {
   name?: string
   startSum?: number
+}
+
+export type CreateUserInput = {
+  name: string
 }
 
 export type GetResult = null | User | Group | Action
