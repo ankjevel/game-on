@@ -19,7 +19,11 @@ export const checkDuplicate = async ({ id, email }: User) => {
   }
 
   for (const key of keys) {
-    const res = (await get<User>({ id: key, type: StoreTypes.User, check: isUser }))
+    const res = await get<User>({
+      id: key,
+      type: StoreTypes.User,
+      check: isUser,
+    })
 
     if (!res) {
       continue

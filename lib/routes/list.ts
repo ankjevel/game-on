@@ -5,15 +5,15 @@ import toEnum from '../utils/toEnum'
 
 export const register = (app: Application) => {
   app.get(
-    '/get/:id/:type?',
+    '/get/:id/:type',
     async ({ params: { id, type: maybeType } }, res) => {
       const type = toEnum<StoreTypes>(maybeType, StoreTypes)
 
-      if (type != null) {
-        res.send(await dataStore.get({ id, type }))
-      } else {
-        res.send(await dataStore.get({ id }))
+      if (type == null) {
+        return res.sendStatus(400)
       }
+
+      res.send(await dataStore.getWrapper({ id, type }))
     }
   )
 }

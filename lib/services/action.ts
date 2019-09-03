@@ -1,8 +1,8 @@
 // import uuid from 'uuid'
 
 // import redis from '../adapters/redis'
-import { Group, StoreTypes, isGroup } from '../types/dataStore'
-import { get as getFromStore } from './dataStore'
+import { Group, StoreTypes, isGroup, isAction } from '../types/dataStore'
+import { getWrapper as getFromStore } from './dataStore'
 import { pushSession } from './session'
 import parse from '../utils/parse'
 import mainLoop from './messageListener'
@@ -12,9 +12,13 @@ const CHANNEL = 'message'
 // const client = redis()
 
 const getGroup = async (id: Group['id']): Promise<Group | null> => {
-  const result = await getFromStore({ id, type: StoreTypes.Group })
+  const result = await getFromStore<Group>({ id, type: StoreTypes.Group })
 
-  return isGroup(result) ? result : null
+  if (result == null) {
+    return null
+  }
+
+  return result
 }
 
 export const queueAction = async (group: Group | null) => {

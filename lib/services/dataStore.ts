@@ -1,7 +1,8 @@
 import uuid from 'uuid'
-import redis from '../adapters/redis'
-import parse from '../utils/parse'
 import * as userService from './user'
+import parse from '../utils/parse'
+import redis from '../adapters/redis'
+import toEnum from '../utils/toEnum'
 
 import {
   Action,
@@ -9,22 +10,23 @@ import {
   CreateUserInput,
   GetResult,
   Group,
-  Types,
   isAction,
   isGroup,
   isUser,
   StoreTypes,
+  Types,
   User,
 } from '../types/dataStore'
 
 export {
-  StoreTypes,
-  User,
-  Group,
+  Action,
   CreateGroupInput,
   CreateUserInput,
   GetResult,
+  Group,
+  StoreTypes,
   Types,
+  User,
 }
 
 const client = redis()
@@ -62,10 +64,8 @@ export const create = async <T extends Types>(
 
   const object = format(id)
 
-  console.log('check')
   await checkDuplicate<T>(object)
 
-  console.log('set')
   await client.set(
     id,
     typeof object === 'string' ? object : JSON.stringify(object)
@@ -77,12 +77,17 @@ export const create = async <T extends Types>(
 export const all = async (prefix: StoreTypes) =>
   (await client.keys(`${prefix}:*`)) || []
 
-export const update = async <T extends Types>(id: T['id'], data: T, check: Check) => {
+export const update = async <T extends Types>(id: T['id'], data: T) => {
   if (id !== data.id) {
     return
   }
 
-  const prev = await get({ id, check })
+  const type = toEnum<StoreTypes>(data, StoreTypes)
+  if (type == null) {
+    return
+  }
+
+  const prev = await getWrapper({ id, type })
 
   if (prev == null) {
     return
@@ -135,6 +140,32 @@ export const get = async <T extends Types>({
   }
 
   return null
+}
+
+export const getWrapper = async <T extends Types>({
+  type,
+  id,
+}: {
+  type: StoreTypes
+  id: string
+}): Promise<MaybeNull<T>> => {
+  let check: Check
+
+  switch (type) {
+    case StoreTypes.Action:
+      check = isAction
+      break
+    case StoreTypes.Group:
+      check = isGroup
+      break
+    case StoreTypes.User:
+      check = isGroup
+      break
+    default:
+      throw new Error('missing type')
+  }
+
+  return get<T>({ id, type, check })
 }
 
 /// get<User>({ id: 'hello'})
