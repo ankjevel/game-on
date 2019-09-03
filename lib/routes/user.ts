@@ -5,10 +5,9 @@ import nullOrEmpty from '../utils/nullOrEmpty'
 import looksLikeEmail from '../utils/looksLikeEmail'
 import config from '../config'
 import { User } from 'dataStore'
+import Route from 'Route'
 
-const options = { expiresIn: config.jwt.expire }
-
-export const register = (app: Application) => {
+export const register: Route = app => {
   app.get('/user', async ({ query: { name, email } }, res) => {
     if (
       nullOrEmpty(name) ||
@@ -26,7 +25,9 @@ export const register = (app: Application) => {
       return res.sendStatus(409)
     }
 
-    const token = sign(user, config.jwt.secret, options)
+    const token = sign(user, config.jwt.secret, {
+      expiresIn: config.jwt.expire,
+    })
 
     res.setHeader('Authorization', `Bearer ${token}`)
 

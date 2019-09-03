@@ -1,7 +1,17 @@
-import { Application } from 'express'
+import { Application, RequestHandler } from 'express'
 import { readdirSync, lstatSync } from 'fs'
 import { join, basename } from 'path'
 import { packageJSON } from '../config'
+import { isUser } from '../types/dataStore'
+import Route from 'Route'
+
+export const requireAuth: RequestHandler = (req, res, next) => {
+  if (!isUser(req.user)) {
+    return res.sendStatus(401)
+  }
+
+  next()
+}
 
 export default (app: Application) => {
   app.get('/', (_req, res) => res.send(packageJSON))
@@ -23,14 +33,14 @@ export default (app: Application) => {
 
     try {
       const required = require(path) as {
-        register?: (app: Application) => void
+        register?: Route
       }
 
       if (!required || required.register == null) {
         continue
       }
 
-      required.register(app)
+      required.register(app, requireAuth)
     } catch (error) {
       console.error(error)
     }

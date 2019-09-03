@@ -1,9 +1,9 @@
-import { Application } from 'express'
 import * as dataStore from '../services/dataStore'
 import { StoreTypes } from '../types/dataStore'
 import toEnum from '../utils/toEnum'
+import Route from 'Route'
 
-export const register = (app: Application) => {
+export const register: Route = app => {
   app.get(
     '/get/:id/:type',
     async ({ params: { id, type: maybeType } }, res) => {

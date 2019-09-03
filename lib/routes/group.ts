@@ -1,9 +1,9 @@
-import { Application } from 'express'
+import { Route } from 'Route'
 import hasProp from '../utils/hasProp'
 import isNumber from '../utils/isNumber'
 import * as groupService from '../services/group'
 
-export const register = (app: Application) => {
+export const register: Route = (app, auth) => {
   app.get('/group', async ({ query }, res) => {
     const name: string | undefined =
       hasProp(query, 'name') && typeof query.name === 'string'
@@ -23,9 +23,13 @@ export const register = (app: Application) => {
     res.send(await groupService.newGroup({ name, startSum }))
   })
 
-  app.get('/group/:id/join', async ({ params: { id }, query, user }, res) => {
-    console.log({ id, query, user })
+  app.get(
+    '/group/:id/join',
+    auth,
+    async ({ params: { id }, query, user }, res) => {
+      console.log({ id, query, user })
 
-    return res.sendStatus(200)
-  })
+      return res.sendStatus(200)
+    }
+  )
 }

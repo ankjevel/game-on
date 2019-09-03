@@ -3,7 +3,7 @@ export {}
 declare global {
   namespace jest {
     interface Expect {
-      <T = any>(actual: T, message: String): Matchers<T>
+      <T = any>(actual: T, message: string): Matchers<T>
     }
   }
 }
