@@ -4,7 +4,7 @@ import isNumber from '../utils/isNumber'
 import * as groupService from '../services/group'
 
 export const register = (app: Application) => {
-  app.get('/new-group', async ({ query }, res) => {
+  app.get('/group', async ({ query }, res) => {
     const name: string | undefined =
       hasProp(query, 'name') && typeof query.name === 'string'
         ? query.name.substr(0, 255)
@@ -21,5 +21,11 @@ export const register = (app: Application) => {
         : undefined
 
     res.send(await groupService.newGroup({ name, startSum }))
+  })
+
+  app.get('/group/join/:id', async ({ params: { id }, query }, res) => {
+    console.log({ id, query })
+
+    return res.sendStatus(200)
   })
 }

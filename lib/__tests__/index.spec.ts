@@ -18,7 +18,6 @@ jest.mock('../services/dataStore')
 
 import app, { server } from '../index'
 
-
 let errorMock: jest.Mock
 let logMock: jest.Mock
 let dataStoreCreate: jest.Mock
@@ -62,7 +61,7 @@ describe('app routes', () => {
 })
 
 describe('setup', () => {
-  describe('/new-group', () => {
+  describe('/group', () => {
     it('parses the query-params', async () => {
       const innerCallback = jest.fn()
       dataStoreCreate.mockImplementation((_, callback) => {
@@ -80,19 +79,19 @@ describe('setup', () => {
       const tests: (
         | [string, CreateGroupInput]
         | [string, CreateGroupInput, string])[] = [
-        ['/new-group', {}],
-        ['/new-group?', {}],
-        ['/new-group?name=foo', { name: 'foo' }],
-        ['/new-group?name=[fsffsf];;;', { name: '[fsffsf];;;' }],
-        ['/new-group?startSum=[fsffsf];;;', {}],
-        ['/new-group?startSum=1337', { startSum: 1337 }],
-        ['/new-group?startSum= 1337', { startSum: 1337 }],
-        ['/new-group?startSum=1337.1337', { startSum: 1337 }],
-        ['/new-group?startSum=1337.8', { startSum: 1337 }],
-        ['/new-group?startSum=1337,8', {}],
-        ['/new-group?startSum=-1337', { startSum: 0 }],
+        ['/group', {}],
+        ['/group?', {}],
+        ['/group?name=foo', { name: 'foo' }],
+        ['/group?name=[fsffsf];;;', { name: '[fsffsf];;;' }],
+        ['/group?startSum=[fsffsf];;;', {}],
+        ['/group?startSum=1337', { startSum: 1337 }],
+        ['/group?startSum= 1337', { startSum: 1337 }],
+        ['/group?startSum=1337.1337', { startSum: 1337 }],
+        ['/group?startSum=1337.8', { startSum: 1337 }],
+        ['/group?startSum=1337,8', {}],
+        ['/group?startSum=-1337', { startSum: 0 }],
         [
-          `/new-group?startSum=99999999999999999999999`,
+          `/group?startSum=99999999999999999999999`,
           { startSum: Number.MAX_SAFE_INTEGER },
           'set max-value',
         ],

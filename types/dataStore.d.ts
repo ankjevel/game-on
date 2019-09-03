@@ -6,6 +6,7 @@ export interface Action {
 export interface User {
   id: string
   name: string
+  email: string
 }
 
 export interface Group {
@@ -23,6 +24,7 @@ export type CreateGroupInput = {
 
 export type CreateUserInput = {
   name: string
+  email: string
 }
 
 export type GetResult = null | User | Group | Action

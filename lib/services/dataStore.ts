@@ -1,6 +1,7 @@
 import uuid from 'uuid'
 import redis from '../adapters/redis'
 import parse from '../utils/parse'
+import * as userService from './user'
 
 import {
   Action,
@@ -8,19 +9,48 @@ import {
   CreateUserInput,
   GetResult,
   Group,
+  Types,
   isAction,
   isGroup,
   isUser,
   StoreTypes,
   User,
 } from '../types/dataStore'
-export { StoreTypes, User, Group, CreateGroupInput, CreateUserInput, GetResult }
+
+export {
+  StoreTypes,
+  User,
+  Group,
+  CreateGroupInput,
+  CreateUserInput,
+  GetResult,
+  Types,
+}
 
 const client = redis()
 
-const newId = (type: StoreTypes) => `${type}:${uuid.v4()}`
+export const newId = (type: StoreTypes) => `${type}:${uuid.v4()}`
 
-export const create = async <T extends Group | Action | User>(
+export const stripTag = (input: string) => input.split(':')[1] || ''
+
+export const checkDuplicate = async <T extends Types>(input: T) => {
+  console.log({
+    input,
+    isAction: isAction(input),
+    isGroup: isGroup(input),
+    isUser: isUser(input),
+  })
+
+  if (isAction(input) || isGroup(input)) {
+    return
+  }
+
+  if (isUser(input)) {
+    return userService.checkDuplicate(input)
+  }
+}
+
+export const create = async <T extends Types>(
   type: StoreTypes,
   format: (id: string) => T
 ): Promise<T> => {
@@ -32,6 +62,10 @@ export const create = async <T extends Group | Action | User>(
 
   const object = format(id)
 
+  console.log('check')
+  await checkDuplicate<T>(object)
+
+  console.log('set')
   await client.set(
     id,
     typeof object === 'string' ? object : JSON.stringify(object)
@@ -40,10 +74,10 @@ export const create = async <T extends Group | Action | User>(
   return object
 }
 
-export const update = async <T extends Group | Action | User>(
-  id: T['id'],
-  data: T
-) => {
+export const all = async (prefix: StoreTypes) =>
+  (await client.keys(`${prefix}:*`)) || []
+
+export const update = async <T extends Types>(id: T['id'], data: T) => {
   if (id !== data.id) {
     return
   }
@@ -66,7 +100,7 @@ export const get = async ({
 }: {
   type?: StoreTypes
   id: string
-}): Promise<GetResult> => {
+}): Promise<Types | null> => {
   const query =
     id.includes(':') === false
       ? type == null
@@ -81,7 +115,6 @@ export const get = async ({
   }
 
   const result = await client.get(query)
-
   if (result === null) {
     return null
   }

@@ -9,14 +9,16 @@
     "build": "node_modules/.bin/tsc",
     "lint": "node_modules/.bin/eslint '{types,lib}/{**/,}*.ts'",
     "prettier": "node_modules/.bin/prettier --check '{types,lib}/{**/,}*.ts'",
-    "test": "node_modules/.bin/jest --forceExit"
+    "test": "node_modules/.bin/jest --forceExit --detectOpenHandles"
   },
   "dependencies": {
     "@iteam/config": "12.1.0",
     "body-parser": "1.19.0",
     "cors": "2.8.5",
     "express": "4.17.1",
+    "express-jwt": "5.3.1",
     "ioredis": "4.14.0",
+    "jsonwebtoken": "8.5.1",
     "source-map-support": "0.5.13",
     "uuid": "3.3.3"
   },
@@ -24,8 +26,10 @@
     "@iteam/eslint-config-iteam-node": "0.1.0",
     "@types/cors": "2.8.6",
     "@types/express": "4.17.1",
+    "@types/express-jwt": "0.0.42",
     "@types/ioredis": "4.0.15",
     "@types/jest": "24.0.18",
+    "@types/jsonwebtoken": "8.3.3",
     "@types/node": "12.7.3",
     "@types/supertest": "2.0.8",
     "@types/uuid": "3.4.5",

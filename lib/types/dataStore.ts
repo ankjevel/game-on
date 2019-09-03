@@ -1,4 +1,6 @@
 import hasProp from '../utils/hasProp'
+import looksLikeEmail from '../utils/looksLikeEmail'
+import nullOrEmpty from '../utils/nullOrEmpty'
 import {
   Action,
   Group,
@@ -7,30 +9,48 @@ import {
   CreateUserInput,
   GetResult,
 } from 'dataStore'
-export { Action, Group, User, CreateGroupInput, CreateUserInput, GetResult }
-
+export type Types = Action | Group | User
 export enum StoreTypes {
   Action = 'action',
   Group = 'group',
   User = 'user',
 }
+export { Action, Group, User, CreateGroupInput, CreateUserInput, GetResult }
+
+export const checkId = (input: string, type: StoreTypes) =>
+  input.split(':')[0] === type
 
 export const isUser = (any: any): any is User => {
-  return any != null && hasProp(any, 'id')
+  return (
+    any != null &&
+    (hasProp(any, 'id') &&
+      !nullOrEmpty(any.id) &&
+      checkId(any.id, StoreTypes.User)) &&
+    (hasProp(any, 'email') &&
+      !nullOrEmpty(any.email) &&
+      looksLikeEmail(any.email))
+  )
 }
 
 export const isGroup = (any: any): any is Group => {
   return (
     any != null &&
-    hasProp(any, 'id') &&
-    hasProp(any, 'users') &&
-    typeof any.id === 'string' &&
-    Array.isArray(any.users) &&
-    any.users.every(value => isUser(value)) &&
-    ((hasProp(any, 'action') && isAction(any.action)) || true)
+    (hasProp(any, 'id') &&
+      typeof any.id === 'string' &&
+      !nullOrEmpty(any.id) &&
+      checkId(any.id, StoreTypes.Group)) &&
+    (hasProp(any, 'users')
+      ? Array.isArray(any.users) && any.users.every(value => isUser(value))
+      : true) &&
+    (hasProp(any, 'action') ? isAction(any.action) : true)
   )
 }
 
 export const isAction = (any: any): any is Action => {
-  return any != null && hasProp(any, 'id') && typeof any.id === 'string'
+  return (
+    any != null &&
+    hasProp(any, 'id') &&
+    typeof any.id === 'string' &&
+    checkId(any.id, StoreTypes.Action)
+  )
 }
