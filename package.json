@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node_modules/.bin/ts-node lib/index.ts",
+    "start:compiled": "node -r source-map-support/register lib",
     "dev": "node_modules/.bin/ts-node-dev --no-notify lib/index.ts",
     "build": "node_modules/.bin/tsc",
     "lint": "node_modules/.bin/eslint '{src,types,lib}/{**/,}*.ts'",
@@ -15,6 +16,7 @@
     "cors": "2.8.5",
     "express": "4.17.1",
     "ioredis": "4.14.0",
+    "source-map-support": "0.5.13",
     "uuid": "3.3.3"
   },
   "devDependencies": {

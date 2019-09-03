@@ -1,16 +1,38 @@
 import { Application } from 'express'
+import { readdirSync, lstatSync } from 'fs'
+import { join, basename } from 'path'
 import { packageJSON } from '../config'
-
-import demo from './demo'
-import group from './group'
-import list from './list'
 
 export default (app: Application) => {
   app.get('/', (_req, res) => res.send(packageJSON))
   app.get('/favicon.ico', (_req, res) => res.status(404).send(null))
 
-  group(app)
-  list(app)
+  for (const file of readdirSync(__dirname)) {
+    const path = join(__dirname, file)
 
-  demo(app)
+    if (path === __filename) {
+      continue
+    }
+
+    if (
+      lstatSync(path).isFile() === false ||
+      basename(path).match(/\.[jt]s$/i) == null
+    ) {
+      continue
+    }
+
+    try {
+      const required = require(path) as {
+        register?: (app: Application) => void
+      }
+
+      if (!required || required.register == null) {
+        continue
+      }
+
+      required.register(app)
+    } catch (error) {
+      console.error(error)
+    }
+  }
 }

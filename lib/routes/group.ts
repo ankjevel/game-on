@@ -3,7 +3,7 @@ import hasProp from '../utils/hasProp'
 import isNumber from '../utils/isNumber'
 import * as groupService from '../services/group'
 
-export default (app: Application) => {
+export const register = (app: Application) => {
   app.get('/new-group', async ({ query }, res) => {
     const name: string | undefined =
       hasProp(query, 'name') && typeof query.name === 'string'

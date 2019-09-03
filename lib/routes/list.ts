@@ -3,7 +3,7 @@ import * as dataStore from '../services/dataStore'
 import { StoreTypes } from '../types/dataStore'
 import toEnum from '../utils/toEnum'
 
-export default (app: Application) => {
+export const register = (app: Application) => {
   app.get(
     '/get/:id/:type?',
     async ({ params: { id, type: maybeType } }, res) => {
