@@ -36,13 +36,6 @@ export const newId = (type: StoreTypes) => `${type}:${uuid.v4()}`
 export const stripTag = (input: string) => input.split(':')[1] || ''
 
 export const checkDuplicate = async <T extends Types>(input: T) => {
-  console.log({
-    input,
-    isAction: isAction(input),
-    isGroup: isGroup(input),
-    isUser: isUser(input),
-  })
-
   if (isAction(input) || isGroup(input)) {
     return
   }
@@ -120,26 +113,22 @@ export const get = async <T extends Types>({
       ? null
       : id
 
-  if (query == null) {
+  if (query == null || !query.startsWith(`${type}:`)) {
     return null
   }
 
   const result = await client.get(query)
-  if (result === null) {
+  if (result == null) {
     return null
   }
 
   try {
-    if (id.includes(type)) {
-      const parsed = parse<T>(result)
-      return check(parsed) ? parsed : null
-    }
+    const parsed = parse<T>(result)
+    return check(parsed) ? parsed : null
   } catch (error) {
     console.error(result, error)
     return null
   }
-
-  return null
 }
 
 export const getWrapper = async <T extends Types>({
@@ -159,7 +148,7 @@ export const getWrapper = async <T extends Types>({
       check = isGroup
       break
     case StoreTypes.User:
-      check = isGroup
+      check = isUser
       break
     default:
       throw new Error('missing type')
@@ -167,6 +156,3 @@ export const getWrapper = async <T extends Types>({
 
   return get<T>({ id, type, check })
 }
-
-/// get<User>({ id: 'hello'})
-// get({ id: hello }) as User | null

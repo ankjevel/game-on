@@ -10,7 +10,6 @@ export const app = express()
 export default app
 
 export const errorHandler: ErrorRequestHandler = (error, _req, _res, next) => {
-  console.log('this shit')
   console.error(error.stack)
   next(error)
 }
@@ -37,10 +36,6 @@ app
   .use(errorHandler)
 
 routes(app)
-
-app.on('error', () => {
-  console.log('this shit')
-})
 
 export const server = app.listen(config.express, () => {
   console.log(`listening on port ${config.express.port}`)

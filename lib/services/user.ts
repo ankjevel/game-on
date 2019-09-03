@@ -30,10 +30,9 @@ export const checkDuplicate = async ({ id, email }: User) => {
     }
 
     if (`${res.email}`.toLowerCase() === email.toLowerCase()) {
-      throw new Error(`${res.email} taken`)
+      throw new Error(`${res.email} taken; by ${res.id}`)
     }
   }
 
-  console.log({ id, keys, email })
   return
 }
