@@ -8,6 +8,8 @@ import hasProp from '../utils/hasProp'
 import isNumber from '../utils/isNumber'
 import toEnum from '../utils/toEnum'
 
+import { push } from '../services/action'
+
 export default (app: Application) => {
   app.get('/', (_req, res) => res.send(packageJSON))
   app.get('/favicon.ico', (_req, res) => res.status(404).send(null))
@@ -29,6 +31,12 @@ export default (app: Application) => {
         : undefined
 
     res.send(await groupService.newGroup({ name, startSum }))
+  })
+
+  app.get('/test/:message', ({ params: { message }}, res) => {
+    push({ message })
+
+    res.send(null)
   })
 
   app.get(
