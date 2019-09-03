@@ -23,8 +23,8 @@ export const register = (app: Application) => {
     res.send(await groupService.newGroup({ name, startSum }))
   })
 
-  app.get('/group/join/:id', async ({ params: { id }, query }, res) => {
-    console.log({ id, query })
+  app.get('/group/:id/join', async ({ params: { id }, query, user }, res) => {
+    console.log({ id, query, user })
 
     return res.sendStatus(200)
   })

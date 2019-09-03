@@ -18,9 +18,9 @@ export const checkDuplicate = async ({ id, email }: User) => {
     throw new Error(`duplicate of ${id}`)
   }
 
-  for (const key of keys) {
+  for (const id of keys) {
     const res = await get<User>({
-      id: key,
+      id,
       type: StoreTypes.User,
       check: isUser,
     })
