@@ -1,5 +1,5 @@
+/* eslint-disable */
 export {}
-
 declare global {
   namespace jest {
     interface Expect {

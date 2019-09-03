@@ -16,24 +16,6 @@ export interface Group {
   action?: Action
 }
 
-// export type Action = {
-//   id: string
-//   lastAction?: string
-// }
-
-// export type User = {
-//   id: string
-//   name: string
-// }
-
-// export type Group = {
-//   id: string
-//   name: string
-//   startSum: number
-//   users: User[]
-//   action?: Action
-// }
-
 export type CreateGroupInput = {
   name?: string
   startSum?: number

@@ -6,7 +6,10 @@ import redis from '../adapters/redis'
 const sessionId = uuid.v4()
 const client = redis()
 
-export async function lock(key: string, expire = lockExpire): Promise<boolean> {
+export const lock = async (
+  key: string,
+  expire = lockExpire
+): Promise<boolean> => {
   const lockKey = `lock:${key}`
   const ok = await client.setnx(lockKey, sessionId)
 
@@ -19,6 +22,6 @@ export async function lock(key: string, expire = lockExpire): Promise<boolean> {
   return lockSet
 }
 
-export async function unlock(key: string) {
+export const unlock = async (key: string) => {
   await client.del(`lock:${key}`)
 }

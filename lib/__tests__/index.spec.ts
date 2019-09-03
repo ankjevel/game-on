@@ -1,8 +1,4 @@
 import supertest from 'supertest'
-// import path from 'path'
-// import querystring from 'querystring'
-// import hasProp from '../utils/hasProp'
-
 import * as dataStore from '../services/dataStore'
 import { CreateGroupInput } from 'dataStore'
 
@@ -18,7 +14,6 @@ jest.mock('../config', () => ({
 }))
 
 jest.mock('ioredis')
-
 jest.mock('../services/dataStore')
 
 import app, { server } from '../index'
@@ -31,7 +26,7 @@ beforeEach(() => {
   logMock = jest.fn()
 
   console.error = errorMock
-  // console.log = logMock
+  console.log = logMock
 
   dataStoreCreate = dataStore.create as jest.Mock
 })

@@ -48,9 +48,8 @@ export const queueAction = async (group: Group | null) => {
 export const push = async (message: any) => {
   await pushSession({ channel: CHANNEL, message: JSON.stringify(message) })
 }
-
 ;(async () => {
-  mainLoop(CHANNEL, (async message => {
+  mainLoop(CHANNEL, async message => {
     console.log(parse(message))
-  }))
+  })
 })()

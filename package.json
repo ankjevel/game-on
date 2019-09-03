@@ -7,7 +7,8 @@
     "start:compiled": "node -r source-map-support/register lib",
     "dev": "node_modules/.bin/ts-node-dev --no-notify lib/index.ts",
     "build": "node_modules/.bin/tsc",
-    "lint": "node_modules/.bin/eslint '{src,types,lib}/{**/,}*.ts'",
+    "lint": "node_modules/.bin/eslint '{types,lib}/{**/,}*.ts'",
+    "prettier": "node_modules/.bin/prettier --check '{types,lib}/{**/,}*.ts'",
     "test": "node_modules/.bin/jest"
   },
   "dependencies": {
@@ -29,6 +30,7 @@
     "@types/supertest": "2.0.8",
     "@types/uuid": "3.4.5",
     "@typescript-eslint/eslint-plugin": "2.0.0",
+    "@typescript-eslint/parser": "2.1.0",
     "eslint": "6.3.0",
     "jest": "24.9.0",
     "jest-expect-message": "1.0.2",
