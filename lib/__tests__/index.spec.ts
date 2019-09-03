@@ -18,6 +18,7 @@ jest.mock('../services/dataStore')
 
 import app, { server } from '../index'
 
+
 let errorMock: jest.Mock
 let logMock: jest.Mock
 let dataStoreCreate: jest.Mock
@@ -31,7 +32,7 @@ beforeEach(() => {
   dataStoreCreate = dataStore.create as jest.Mock
 })
 
-afterAll(() => {
+afterEach(() => {
   server.close()
 })
 

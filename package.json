@@ -9,7 +9,7 @@
     "build": "node_modules/.bin/tsc",
     "lint": "node_modules/.bin/eslint '{types,lib}/{**/,}*.ts'",
     "prettier": "node_modules/.bin/prettier --check '{types,lib}/{**/,}*.ts'",
-    "test": "node_modules/.bin/jest"
+    "test": "node_modules/.bin/jest --forceExit"
   },
   "dependencies": {
     "@iteam/config": "12.1.0",
@@ -29,7 +29,7 @@
     "@types/node": "12.7.3",
     "@types/supertest": "2.0.8",
     "@types/uuid": "3.4.5",
-    "@typescript-eslint/eslint-plugin": "2.0.0",
+    "@typescript-eslint/eslint-plugin": "2.1.0",
     "@typescript-eslint/parser": "2.1.0",
     "eslint": "6.3.0",
     "jest": "24.9.0",
