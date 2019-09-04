@@ -14,7 +14,7 @@ export const newUser = async ({
       id,
       name,
       email,
-      password: predictable.encrypt(`${id}:${password}`),
+      password: `${predictable.encrypt(`${id}:${password}`)}`,
     }
   })
 
@@ -101,7 +101,7 @@ export const checkAuthAndReturnUser = async ({
     return null
   }
 
-  if (predictable.encrypt(`${user.id}:${password}`) !== user.password) {
+  if (`${predictable.encrypt(`${user.id}:${password}`)}` !== user.password) {
     throw new Error(`wrong password for ${user.id} [${user.email}]`)
   }
 
