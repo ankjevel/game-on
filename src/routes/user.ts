@@ -5,6 +5,10 @@ import config from '../config'
 import { UserWithOutPassword } from 'dataStore'
 import Route from 'Route'
 
+const {
+  jwt: { secret, expire: expiresIn },
+} = config
+
 export const register: Route = app => {
   app.get('/user', async ({ query: { name, email, p1, p2 } }, res) => {
     if (
@@ -18,7 +22,7 @@ export const register: Route = app => {
       return res.sendStatus(400)
     }
 
-    let user: UserWithOutPassword
+    let user
     try {
       user = await userService.newUser({ name, email, password: p1 })
     } catch (error) {
@@ -26,9 +30,7 @@ export const register: Route = app => {
       return res.sendStatus(409)
     }
 
-    const token = sign(user, config.jwt.secret, {
-      expiresIn: config.jwt.expire,
-    })
+    const token = sign(user, secret, { expiresIn })
 
     res.setHeader('Authorization', `Bearer ${token}`)
     res.send(token)
@@ -50,9 +52,7 @@ export const register: Route = app => {
         return res.sendStatus(401)
       }
 
-      const token = sign(user, config.jwt.secret, {
-        expiresIn: config.jwt.expire,
-      })
+      const token = sign(user, secret, { expiresIn })
 
       res.setHeader('Authorization', `Bearer ${token}`)
       res.send(token)

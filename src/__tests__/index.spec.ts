@@ -1,6 +1,7 @@
 import supertest from 'supertest'
 import * as dataStore from '../services/dataStore'
 import { CreateGroupInput } from 'dataStore'
+import { isUser } from '../types/dataStore'
 
 jest.mock('../config', () => ({
   express: {
@@ -15,24 +16,40 @@ jest.mock('../config', () => ({
     secret: 'supersecret',
     expire: '25h',
   },
+  encryption: {
+    variable: 'foo',
+    predictable: 'bar',
+  },
 }))
 
+let user: any
+const jwtMock = (req, _res, next) => {
+  req.user = user
+  next()
+}
+
+jest.mock('express-jwt', () => () => jwtMock)
 jest.mock('ioredis')
 jest.mock('../services/dataStore')
+jest.mock('../types/dataStore')
 
 import app, { server } from '../index'
-
 let errorMock: jest.Mock
 let logMock: jest.Mock
 let dataStoreCreate: jest.Mock
+let isUserMock: jest.Mock
 beforeEach(() => {
   errorMock = jest.fn()
   logMock = jest.fn()
 
   console.error = errorMock
   console.log = logMock
-
+  isUserMock = (isUser as unknown) as jest.Mock
   dataStoreCreate = dataStore.create as jest.Mock
+
+  user = { id: 'foo' }
+
+  isUserMock.mockReturnValue(true)
 })
 
 afterEach(() => {
@@ -77,12 +94,12 @@ describe('setup', () => {
         id,
         name: '',
         startSum: 1000,
-        users: [],
+        users: [user.id],
       }
 
       const tests: (
-        | [string, CreateGroupInput]
-        | [string, CreateGroupInput, string])[] = [
+        | [string, Omit<CreateGroupInput, 'userID'>]
+        | [string, Omit<CreateGroupInput, 'userID'>, string])[] = [
         ['/group', {}],
         ['/group?', {}],
         ['/group?name=foo', { name: 'foo' }],
@@ -95,7 +112,7 @@ describe('setup', () => {
         ['/group?startSum=1337,8', {}],
         ['/group?startSum=-1337', { startSum: 0 }],
         [
-          `/group?startSum=99999999999999999999999`,
+          '/group?startSum=99999999999999999999999',
           { startSum: Number.MAX_SAFE_INTEGER },
           'set max-value',
         ],

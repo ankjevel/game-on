@@ -16,13 +16,14 @@ export interface Group {
   id: string
   name: string
   startSum: number
-  users: User[]
+  users: User['id'][]
   action?: Action
 }
 
 export type CreateGroupInput = {
   name?: string
   startSum?: number
+  userID: User['id']
 }
 
 export type CreateUserInput = {

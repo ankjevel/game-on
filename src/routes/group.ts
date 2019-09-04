@@ -1,9 +1,14 @@
 import { Route } from 'Route'
 import { isNumber, hasProp, nullOrEmpty } from '../utils'
 import * as groupService from '../services/group'
+import { UserWithOutPassword } from 'dataStore'
 
 export const register: Route = (app, auth) => {
-  app.get('/group', async ({ query }, res) => {
+  app.get('/group', auth, async ({ query, user }, res) => {
+    if (user == null) {
+      return res.sendStatus(400)
+    }
+
     const name: string | undefined =
       hasProp(query, 'name') &&
       typeof query.name === 'string' &&
@@ -21,7 +26,13 @@ export const register: Route = (app, auth) => {
           )
         : undefined
 
-    res.send(await groupService.newGroup({ name, startSum }))
+    res.send(
+      await groupService.newGroup({
+        name,
+        startSum,
+        userID: user.id,
+      })
+    )
   })
 
   app.get(
