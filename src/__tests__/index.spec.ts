@@ -34,6 +34,7 @@ jest.mock('../services/dataStore')
 jest.mock('../types/dataStore')
 
 import app, { server } from '../index'
+
 let errorMock: jest.Mock
 let logMock: jest.Mock
 let dataStoreCreate: jest.Mock
