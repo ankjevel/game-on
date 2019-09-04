@@ -5,6 +5,10 @@ import { name, version } from '../package.json'
 const config = nconf({
   file: `${__dirname}/../config.json`,
   defaults: {
+    encryption: {
+      variable: 'some key or something',
+      predictable: 'some other key',
+    },
     express: { port: 5555, hostname: '' },
     jwt: {
       expire: '1d',
@@ -17,6 +21,7 @@ const config = nconf({
   },
 })
 
+export const encryption = config.get<Config.Encryption>('encryption')
 export const express = config.get<Config.Express>('express')
 export const jwt = config.get<Config.JWT>('jwt')
 export const lockExpire = config.get<Config.LockExpire>('lockExpire')
@@ -24,6 +29,7 @@ export const packageJSON = config.get<Config.PackageJSON>('packageJSON')
 export const redis = config.get<Config.Redis>('redis')
 
 export default {
+  encryption,
   express,
   jwt,
   lockExpire,

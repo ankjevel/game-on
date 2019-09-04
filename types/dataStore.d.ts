@@ -7,7 +7,10 @@ export interface User {
   id: string
   name: string
   email: string
+  password: string
 }
+
+export type UserWithOutPassword = Omit<User, 'password'>
 
 export interface Group {
   id: string
@@ -25,6 +28,7 @@ export type CreateGroupInput = {
 export type CreateUserInput = {
   name: string
   email: string
+  password: string
 }
 
 export type GetResult = null | User | Group | Action

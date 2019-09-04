@@ -1,23 +1,26 @@
 import { sign } from 'jsonwebtoken'
-import * as groupService from '../services/user'
+import * as userService from '../services/user'
 import { nullOrEmpty, looksLikeEmail } from '../utils'
 import config from '../config'
-import { User } from 'dataStore'
+import { UserWithOutPassword } from 'dataStore'
 import Route from 'Route'
 
 export const register: Route = app => {
-  app.get('/user', async ({ query: { name, email } }, res) => {
+  app.get('/user', async ({ query: { name, email, p1, p2 } }, res) => {
     if (
+      nullOrEmpty(p1) ||
       nullOrEmpty(name) ||
       nullOrEmpty(email) ||
-      looksLikeEmail(email) === false
+      looksLikeEmail(email) === false ||
+      p1 !== p2 ||
+      p1.length < 8
     ) {
       return res.sendStatus(400)
     }
 
-    let user: User
+    let user: UserWithOutPassword
     try {
-      user = await groupService.newUser({ name, email })
+      user = await userService.newUser({ name, email, password: p1 })
     } catch (error) {
       console.error(error)
       return res.sendStatus(409)
@@ -28,7 +31,34 @@ export const register: Route = app => {
     })
 
     res.setHeader('Authorization', `Bearer ${token}`)
-
     res.send(token)
+  })
+
+  app.get('/user/sign-in', async ({ query: { id, email, password } }, res) => {
+    if (nullOrEmpty(password) || (nullOrEmpty(email) && nullOrEmpty(email))) {
+      return res.sendStatus(401)
+    }
+
+    try {
+      const user = await userService.checkAuthAndReturnUser({
+        id,
+        email,
+        password,
+      })
+
+      if (user == null) {
+        return res.sendStatus(401)
+      }
+
+      const token = sign(user, config.jwt.secret, {
+        expiresIn: config.jwt.expire,
+      })
+
+      res.setHeader('Authorization', `Bearer ${token}`)
+      res.send(token)
+    } catch (error) {
+      console.log(error)
+      res.sendStatus(401)
+    }
   })
 }

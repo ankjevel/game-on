@@ -26,7 +26,8 @@ export const isUser = (any: any): any is User => {
       checkId(any.id, StoreTypes.User)) &&
     (hasProp(any, 'email') &&
       !nullOrEmpty(any.email) &&
-      looksLikeEmail(any.email))
+      looksLikeEmail(any.email)) &&
+    (hasProp(any, 'password') && !nullOrEmpty(any.password))
   )
 }
 

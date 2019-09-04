@@ -1,10 +1,10 @@
 import * as express from 'express'
-import { User } from 'dataStore'
+import { UserWithOutPassword } from 'dataStore'
 
 declare global {
   namespace Express {
     interface Request {
-      user?: User & {
+      user?: UserWithOutPassword & {
         iat: number
         exp: number
       }
