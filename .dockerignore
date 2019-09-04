@@ -1,6 +1,6 @@
 *
 
-!lib
+!src
 !types
 !.eslint*
 !jest.config.js
