@@ -11,6 +11,10 @@ jest.mock('../config', () => ({
     name: 'test',
     version: '13.37.0-beta-2-final',
   },
+  jwt: {
+    secret: 'supersecret',
+    expire: '25h',
+  },
 }))
 
 jest.mock('ioredis')

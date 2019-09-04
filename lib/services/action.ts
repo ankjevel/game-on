@@ -1,7 +1,7 @@
 // import uuid from 'uuid'
-
 // import redis from '../adapters/redis'
-import { Group, StoreTypes, isGroup, isAction } from '../types/dataStore'
+
+import { Group, StoreTypes } from '../types/dataStore'
 import { getWrapper as getFromStore } from './dataStore'
 import { pushSession } from './session'
 import parse from '../utils/parse'

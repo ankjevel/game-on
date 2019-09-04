@@ -1,12 +1,15 @@
 import { Route } from 'Route'
 import hasProp from '../utils/hasProp'
 import isNumber from '../utils/isNumber'
+import nullOrEmpty from '../utils/nullOrEmpty'
 import * as groupService from '../services/group'
 
 export const register: Route = (app, auth) => {
   app.get('/group', async ({ query }, res) => {
     const name: string | undefined =
-      hasProp(query, 'name') && typeof query.name === 'string'
+      hasProp(query, 'name') &&
+      typeof query.name === 'string' &&
+      nullOrEmpty(query.name) === false
         ? query.name.substr(0, 255)
         : undefined
 
