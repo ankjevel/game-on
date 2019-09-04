@@ -1,6 +1,6 @@
 import * as dataStore from '../services/dataStore'
 import { StoreTypes } from '../types/dataStore'
-import toEnum from '../utils/toEnum'
+import { toEnum } from '../utils'
 import Route from 'Route'
 
 export const register: Route = app => {

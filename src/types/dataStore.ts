@@ -1,6 +1,4 @@
-import hasProp from '../utils/hasProp'
-import looksLikeEmail from '../utils/looksLikeEmail'
-import nullOrEmpty from '../utils/nullOrEmpty'
+import { hasProp, looksLikeEmail, nullOrEmpty } from '../utils'
 import {
   Action,
   Group,

@@ -5,6 +5,7 @@ import jwt from 'express-jwt'
 
 import config from './config'
 import routes from './routes'
+import { hasProp } from './utils'
 
 export const app = express()
 export default app
@@ -22,11 +23,14 @@ app
       credentialsRequired: false,
       secret: config.jwt.secret,
       getToken: ({ headers }) => {
-        if (
-          headers.authorization &&
-          headers.authorization.split(' ')[0] === 'Bearer'
-        ) {
-          return headers.authorization.split(' ')[1]
+        const { authorization = '' } = hasProp(headers, 'authorization')
+          ? headers
+          : {}
+
+        const [type, token] = authorization.split(' ')
+
+        if (type === 'Bearer') {
+          return token
         }
 
         return null

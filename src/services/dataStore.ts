@@ -1,8 +1,7 @@
 import uuid from 'uuid'
 import * as userService from './user'
-import parse from '../utils/parse'
+import { parse, toEnum } from '../utils'
 import redis from '../adapters/redis'
-import toEnum from '../utils/toEnum'
 
 import {
   Action,

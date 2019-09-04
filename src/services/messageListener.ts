@@ -1,4 +1,4 @@
-import wait from '../utils/wait'
+import { wait } from '../utils'
 import { lock, unlock } from './lock'
 import { popSession } from './session'
 

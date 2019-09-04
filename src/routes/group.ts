@@ -1,7 +1,5 @@
 import { Route } from 'Route'
-import hasProp from '../utils/hasProp'
-import isNumber from '../utils/isNumber'
-import nullOrEmpty from '../utils/nullOrEmpty'
+import { isNumber, hasProp, nullOrEmpty } from '../utils'
 import * as groupService from '../services/group'
 
 export const register: Route = (app, auth) => {
