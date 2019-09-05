@@ -4,45 +4,40 @@ import * as groupService from '../services/group'
 import { UserWithOutPassword, Group } from 'dataStore'
 
 const input = {
-  name(query: any): MaybeUndefined<Group['name']> {
-    return hasProp(query, 'name') &&
-      typeof query.name === 'string' &&
-      nullOrEmpty(query.name) === false
-      ? query.name.substr(0, 255)
+  name(input: any): MaybeUndefined<Group['name']> {
+    return hasProp(input, 'name') &&
+      typeof input.name === 'string' &&
+      nullOrEmpty(input.name) === false
+      ? input.name.substr(0, 255)
       : undefined
   },
 
-  startSum(query: any): MaybeUndefined<Group['startSum']> {
-    return hasProp(query, 'startSum') &&
-      isNumber(query.startSum) &&
-      isNumber(parseInt(query.startSum))
-      ? Math.max(0, Math.min(parseInt(query.startSum), Number.MAX_SAFE_INTEGER))
+  startSum(input: any): MaybeUndefined<Group['startSum']> {
+    return hasProp(input, 'startSum') &&
+      isNumber(input.startSum) &&
+      isNumber(parseInt(input.startSum))
+      ? Math.max(0, Math.min(parseInt(input.startSum), Number.MAX_SAFE_INTEGER))
       : undefined
   },
 
   owner(
-    query: any,
+    input: any,
     userID: UserWithOutPassword['id']
   ): MaybeUndefined<Group['owner']> {
-    return hasProp(query, 'owner') &&
-      typeof query.owner === 'string' &&
-      nullOrEmpty(query.owner) === false &&
-      userID !== query.owner
-      ? query.owner
+    return hasProp(input, 'owner') &&
+      typeof input.owner === 'string' &&
+      nullOrEmpty(input.owner) === false &&
+      userID !== input.owner
+      ? input.owner
       : undefined
   },
 
-  order(query: any): MaybeNull<{ [order: string]: string }> {
-    const order =
-      hasProp(query, 'order') && nullOrEmpty(query.order) === false
-        ? parse<{ [order: string]: string }>(query.order)
-        : null
-
+  order(order: any): MaybeNull<{ [order: string]: string }> {
     if (
       order == null ||
       Object.keys(order).every(key => isNumber(key)) === false ||
       Object.values(order).every(
-        value => !nullOrEmpty(value) && parse(value) == null
+        value => !nullOrEmpty(value) && parse(value as string) == null
       ) === false
     ) {
       return null
@@ -57,21 +52,21 @@ const input = {
 }
 
 export const register: Route = (app, auth) => {
-  app.get('/group', auth, async ({ query, user }, res) => {
+  app.post('/group', auth, async ({ body, user }, res) => {
     if (user == null) {
       return res.sendStatus(400)
     }
 
     res.send(
       await groupService.newGroup({
-        name: input.name(query),
-        startSum: input.startSum(query),
+        name: input.name(body),
+        startSum: input.startSum(body),
         userID: user.id,
       })
     )
   })
 
-  app.get('/group/:id/join', auth, async ({ params: { id }, user }, res) => {
+  app.put('/group/:id/join', auth, async ({ params: { id }, user }, res) => {
     if (user == null || input.param(id)) {
       return res.sendStatus(400)
     }
@@ -85,20 +80,24 @@ export const register: Route = (app, auth) => {
     res.send(result)
   })
 
-  app.get('/group/:id/leave', auth, async ({ params: { id }, user }, res) => {
-    if (user == null || input.param(id)) {
-      return res.sendStatus(400)
+  app.delete(
+    '/group/:id/leave',
+    auth,
+    async ({ params: { id }, user }, res) => {
+      if (user == null || input.param(id)) {
+        return res.sendStatus(400)
+      }
+
+      const result = await groupService.leaveGroup({ id, userID: user.id })
+      if (result == null) {
+        return res.sendStatus(400)
+      }
+
+      res.send({ status: `left "${result.name}"` })
     }
+  )
 
-    const result = await groupService.leaveGroup({ id, userID: user.id })
-    if (result == null) {
-      return res.sendStatus(400)
-    }
-
-    res.send({ status: `left "${result.name}"` })
-  })
-
-  app.get('/group/:id/delete', auth, async ({ params: { id }, user }, res) => {
+  app.delete('/group/:id', auth, async ({ params: { id }, user }, res) => {
     if (user == null || input.param(id)) {
       return res.sendStatus(400)
     }
@@ -111,35 +110,31 @@ export const register: Route = (app, auth) => {
     res.send(result)
   })
 
-  app.get(
-    '/group/:id/update',
-    auth,
-    async ({ params: { id }, query, user }, res) => {
-      if (user == null || input.param(id)) {
-        return res.sendStatus(400)
-      }
-
-      const result = await groupService.updateGroup({
-        id,
-        owner: input.owner(query, user.id),
-        name: input.name(query),
-        startSum: input.startSum(query),
-        userID: user.id,
-      })
-
-      if (result == null) {
-        return res.sendStatus(400)
-      }
-
-      res.send(result)
+  app.patch('/group/:id', auth, async ({ params: { id }, body, user }, res) => {
+    if (user == null || input.param(id)) {
+      return res.sendStatus(400)
     }
-  )
 
-  app.get(
+    const result = await groupService.updateGroup({
+      id,
+      owner: input.owner(body, user.id),
+      name: input.name(body),
+      startSum: input.startSum(body),
+      userID: user.id,
+    })
+
+    if (result == null) {
+      return res.sendStatus(400)
+    }
+
+    res.send(result)
+  })
+
+  app.patch(
     '/group/:id/order',
     auth,
-    async ({ params: { id }, query, user }, res) => {
-      const order = input.order(query)
+    async ({ params: { id }, body, user }, res) => {
+      const order = input.order(body)
 
       if (user == null || input.param(id) || order == null) {
         return res.sendStatus(400)
@@ -159,15 +154,12 @@ export const register: Route = (app, auth) => {
     }
   )
 
-  app.get('/group/:id/start', auth, async ({ params: { id }, user }, res) => {
+  app.put('/group/:id/start', auth, async ({ params: { id }, user }, res) => {
     if (user == null || input.param(id)) {
       return res.sendStatus(400)
     }
 
-    const result = await groupService.startGame({
-      id,
-      userID: user.id,
-    })
+    const result = await groupService.startGame({ id, userID: user.id })
 
     if (result == null) {
       return res.sendStatus(400)

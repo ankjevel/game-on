@@ -1,4 +1,4 @@
-import { UserWithOutPassword, Group, User } from 'dataStore'
+import { UserWithOutPassword, Group, User, Action } from 'dataStore'
 import { create, get, all, update, del } from './dataStore'
 import { StoreTypes, isGroup } from '../types/dataStore'
 import { clone } from '../utils'
@@ -64,6 +64,7 @@ const updateWrapper = async (
   }
 
   const modified = await modify(clone(res))
+
   await update(id, modified, StoreTypes.Group)
 
   return modified
@@ -239,7 +240,7 @@ export const startGame = async ({
     id,
     res => res.turn != null || res.owner !== userID || res.users.length < 2,
     async res => {
-      console.log('start')
+      res.action = await create<Action>(StoreTypes.Action, id => ({ id }))
       return res
     }
   )

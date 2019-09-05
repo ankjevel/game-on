@@ -89,14 +89,16 @@ describe('/group', () => {
     isUserWithOutPasswordMock.mockReturnValue(false)
 
     await supertest(app)
-      .get('/group')
+      .post('/group')
+      .send({})
       .expect(401)
 
     user = null
     isUserWithOutPasswordMock.mockReturnValue(true)
 
     await supertest(app)
-      .get('/group')
+      .post('/group')
+      .send({})
       .expect(400)
   })
 
@@ -120,46 +122,50 @@ describe('/group', () => {
       ],
     }
 
-    const tests: ([string, any] | [string, any, string])[] = [
-      ['/group', {}],
-      ['/group?', {}],
-      ['/group?name=foo', { name: 'foo' }],
-      ['/group?name=[fsffsf];;;', { name: '[fsffsf];;;' }],
-      ['/group?startSum=[fsffsf];;;', {}],
+    const tests: ([any, any] | [any, any, string])[] = [
+      [{}, {}],
+      [{}, {}],
+      [{ name: 'foo' }, { name: 'foo' }],
+      [{ name: '[fsffsf];;;' }, { name: '[fsffsf];;;' }],
+      [{ name: ['fsffsf'] }, {}],
+      [{ startSum: '[fsffsf];;;' }, {}],
       [
-        '/group?startSum=1337',
+        { startSum: 1337 },
         { startSum: 1337, users: [{ id: user.id, sum: 1337 }] },
       ],
       [
-        '/group?startSum= 1337',
+        { startSum: '1337' },
         { startSum: 1337, users: [{ id: user.id, sum: 1337 }] },
       ],
       [
-        '/group?startSum=1337.1337',
+        { startSum: 1337.1337 },
         { startSum: 1337, users: [{ id: user.id, sum: 1337 }] },
       ],
       [
-        '/group?startSum=1337.8',
+        { startSum: 1337.8 },
         { startSum: 1337, users: [{ id: user.id, sum: 1337 }] },
       ],
-      ['/group?startSum=1337,8', {}],
+      [{ startSum: '1337,8' }, {}],
+      [{ startSum: -1337 }, { startSum: 0, users: [{ id: user.id, sum: 0 }] }],
       [
-        '/group?startSum=-1337',
-        { startSum: 0, users: [{ id: user.id, sum: 0 }] },
-      ],
-      [
-        '/group?startSum=99999999999999999999999',
+        { startSum: Number.MAX_SAFE_INTEGER + 1337 },
         {
           startSum: Number.MAX_SAFE_INTEGER,
           users: [{ id: user.id, sum: Number.MAX_SAFE_INTEGER }],
         },
+        'set max-SAFE-value',
+      ],
+      [
+        { startSum: Number.MAX_VALUE },
+        { startSum: 1, users: [{ id: user.id, sum: 1 }] },
         'set max-value',
       ],
     ]
 
-    for (const [query, result, message = ''] of tests) {
+    for (const [body, result, message = ''] of tests) {
       await supertest(app)
-        .get(query)
+        .post('/group')
+        .send(body)
         .expect(200)
 
       expect(dataStore.create, message).lastCalledWith(
@@ -181,7 +187,8 @@ describe('/group', () => {
     })
 
     const { body } = await supertest(app)
-      .get('/group?name=foo')
+      .post('/group')
+      .send({ name: 'foo' })
       .expect(200)
 
     expect(body).toEqual({})

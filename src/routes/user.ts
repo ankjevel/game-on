@@ -9,7 +9,7 @@ const {
 } = config
 
 export const register: Route = app => {
-  app.get('/user', async ({ query: { name, email, p1, p2 } }, res) => {
+  app.post('/user', async ({ body: { name, email, p1, p2 } }, res) => {
     if (
       nullOrEmpty(p1) ||
       nullOrEmpty(name) ||
@@ -35,7 +35,7 @@ export const register: Route = app => {
     res.send(token)
   })
 
-  app.get('/user/sign-in', async ({ query: { id, email, password } }, res) => {
+  app.post('/user/token', async ({ body: { id, email, password } }, res) => {
     if (nullOrEmpty(password) || (nullOrEmpty(email) && nullOrEmpty(id))) {
       return res.sendStatus(401)
     }
