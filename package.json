@@ -40,7 +40,6 @@
     "jest": "24.9.0",
     "jest-expect-message": "1.0.2",
     "jest-watch-typeahead": "0.4.0",
-    "mockdate": "2.0.5",
     "prettier": "1.18.2",
     "supertest": "4.0.2",
     "ts-jest": "24.0.2",
@@ -80,5 +79,52 @@
       "jest-watch-typeahead/filename",
       "jest-watch-typeahead/testname"
     ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "@iteam/eslint-config-iteam-node"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+      "@typescript-eslint"
+    ],
+    "parserOptions": {
+      "ecmaFeatures": {
+        "modules": true
+      },
+      "ecmaVersion": 8,
+      "sourceType": "module"
+    },
+    "overrides": [
+      {
+        "files": [
+          "**/*.tsx",
+          "**/*.ts"
+        ],
+        "rules": {
+          "no-undef": "off",
+          "no-unused-vars": "off",
+          "react/prop-types": "off",
+          "space-before-function-paren": "off"
+        }
+      }
+    ],
+    "rules": {
+      "no-unexpected-multiline": "error"
+    }
+  },
+  "eslintIgnore": [
+    "node_modules",
+    "dist"
+  ],
+  "prettier": {
+    "printWidth": 80,
+    "tabWidth": 2,
+    "useTabs": false,
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "bracketSpacing": true,
+    "jsxBracketSameLine": false
   }
 }

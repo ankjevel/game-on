@@ -2,7 +2,5 @@
 
 !src
 !types
-!.eslint*
-!jest.config.js
 !tsconfig.json
 !package*json
