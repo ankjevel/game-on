@@ -53,7 +53,8 @@ function print {
   echo && echo "$1:"
 }
 
-docker exec -it $(docker ps|grep redis|awk '{print $1}') redis-cli flushall &> /dev/null
+echo "clear redis"
+docker exec -it `docker ps --filter name="$(basename $(pwd))_redis" --format={{.ID}}` redis-cli flushall &> /dev/null
 
 echo "create user 1"
 post "/user" "" '{"name":"foo","email":"dennis@pettersson.se","p1":"dennis222","p2":"dennis222"}'
