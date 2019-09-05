@@ -4,7 +4,7 @@ WORKDIR /build
 
 COPY package*json ./
 
-RUN npm ci
+RUN npm i --no-optional --no-audit --silent
 
 COPY . .
 
@@ -19,7 +19,7 @@ FROM node:12.9-alpine
 WORKDIR /app
 
 COPY package*json ./
-RUN npm ci --production
+RUN npm i --production --no-optional --no-audit --silent
 
 COPY --from=builder /build/dist/src ./src
 
