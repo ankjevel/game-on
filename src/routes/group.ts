@@ -76,7 +76,39 @@ export const register: Route = (app, auth) => {
       return res.sendStatus(400)
     }
 
-    res.send(await groupService.joinGroup({ id, userID: user.id }))
+    const result = await groupService.joinGroup({ id, userID: user.id })
+
+    if (result == null) {
+      return res.sendStatus(400)
+    }
+
+    res.send(result)
+  })
+
+  app.get('/group/:id/leave', auth, async ({ params: { id }, user }, res) => {
+    if (user == null || input.param(id)) {
+      return res.sendStatus(400)
+    }
+
+    const result = await groupService.leaveGroup({ id, userID: user.id })
+    if (result == null) {
+      return res.sendStatus(400)
+    }
+
+    res.send({ status: `left "${result.name}"` })
+  })
+
+  app.get('/group/:id/delete', auth, async ({ params: { id }, user }, res) => {
+    if (user == null || input.param(id)) {
+      return res.sendStatus(400)
+    }
+
+    const result = await groupService.deleteGroup({ id, userID: user.id })
+    if (result == null) {
+      return res.sendStatus(400)
+    }
+
+    res.send(result)
   })
 
   app.get(
@@ -87,15 +119,19 @@ export const register: Route = (app, auth) => {
         return res.sendStatus(400)
       }
 
-      res.send(
-        await groupService.updateGroup({
-          id,
-          owner: input.owner(query, user.id),
-          name: input.name(query),
-          startSum: input.startSum(query),
-          userID: user.id,
-        })
-      )
+      const result = await groupService.updateGroup({
+        id,
+        owner: input.owner(query, user.id),
+        name: input.name(query),
+        startSum: input.startSum(query),
+        userID: user.id,
+      })
+
+      if (result == null) {
+        return res.sendStatus(400)
+      }
+
+      res.send(result)
     }
   )
 
@@ -109,13 +145,34 @@ export const register: Route = (app, auth) => {
         return res.sendStatus(400)
       }
 
-      res.send(
-        await groupService.updateOrder({
-          id,
-          order,
-          userID: user.id,
-        })
-      )
+      const result = await groupService.updateOrder({
+        id,
+        order,
+        userID: user.id,
+      })
+
+      if (result == null) {
+        return res.sendStatus(400)
+      }
+
+      res.send(result)
     }
   )
+
+  app.get('/group/:id/start', auth, async ({ params: { id }, user }, res) => {
+    if (user == null || input.param(id)) {
+      return res.sendStatus(400)
+    }
+
+    const result = await groupService.startGame({
+      id,
+      userID: user.id,
+    })
+
+    if (result == null) {
+      return res.sendStatus(400)
+    }
+
+    res.send(result)
+  })
 }

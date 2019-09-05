@@ -83,15 +83,13 @@ export const update = async <T extends Types>(
   )
 }
 
-export const get = async <T extends Types>({
+const getQuery = ({
   type,
   id,
-  check,
 }: {
   type: StoreTypes
   id: string
-  check: Check
-}): Promise<MaybeNull<T>> => {
+}): MaybeNull<string> => {
   const query =
     id.includes(':') === false
       ? type == null
@@ -102,6 +100,40 @@ export const get = async <T extends Types>({
       : id
 
   if (query == null || !query.startsWith(`${type}:`)) {
+    return null
+  }
+
+  return query
+}
+
+export const del = async ({
+  type,
+  id,
+}: {
+  type: StoreTypes
+  id: string
+}): Promise<boolean> => {
+  const query = getQuery({ id, type })
+  if (query == null) {
+    return false
+  }
+
+  await client.del(query)
+
+  return true
+}
+
+export const get = async <T extends Types>({
+  type,
+  id,
+  check,
+}: {
+  type: StoreTypes
+  id: string
+  check: Check
+}): Promise<MaybeNull<T>> => {
+  const query = getQuery({ id, type })
+  if (query == null) {
     return null
   }
 
@@ -122,9 +154,11 @@ export const get = async <T extends Types>({
 export const getWrapper = async <T extends Types>({
   type,
   id,
+  exclude = [],
 }: {
   type: StoreTypes
   id: string
+  exclude?: string[]
 }): Promise<MaybeNull<T>> => {
   let check: Check
 
@@ -142,5 +176,14 @@ export const getWrapper = async <T extends Types>({
       throw new Error('missing type')
   }
 
-  return get<T>({ id, type, check })
+  const res = await get<T>({ id, type, check })
+  if (res == null) {
+    return null
+  }
+
+  for (const key of exclude) {
+    delete res[key]
+  }
+
+  return res
 }

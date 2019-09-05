@@ -1,5 +1,5 @@
 import * as dataStore from '../services/dataStore'
-import { StoreTypes, isUser } from '../types/dataStore'
+import { StoreTypes } from '../types/dataStore'
 import { toEnum, nullOrEmpty } from '../utils'
 import Route from 'Route'
 
@@ -16,13 +16,14 @@ export const register: Route = app => {
         return res.sendStatus(400)
       }
 
-      const data = await dataStore.getWrapper({ id, type })
+      const data = await dataStore.getWrapper({
+        id,
+        type,
+        exclude: ['email', 'password'],
+      })
+
       if (data == null) {
         return res.sendStatus(404)
-      }
-
-      if (isUser(data)) {
-        delete data.password
       }
 
       res.send(data)

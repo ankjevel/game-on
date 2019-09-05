@@ -1,7 +1,23 @@
 import { UserWithOutPassword, Group, User } from 'dataStore'
-import { create, get, update } from './dataStore'
+import { create, get, all, update, del } from './dataStore'
 import { StoreTypes, isGroup } from '../types/dataStore'
 import { clone } from '../utils'
+
+const checkIfAlreadyInAGroup = async (id: UserWithOutPassword['id']) => {
+  for (const key of await all(StoreTypes.Group)) {
+    const res = await get<Group>({
+      id: key,
+      type: StoreTypes.Group,
+      check: isGroup,
+    })
+
+    if (res != null && res.users.some(user => user.id === id)) {
+      return true
+    }
+  }
+
+  return false
+}
 
 export const newGroup = async ({
   name = '',
@@ -9,7 +25,11 @@ export const newGroup = async ({
   userID,
 }: WithOptional<Pick<Group, 'name' | 'startSum'>, 'name' | 'startSum'> & {
   userID: UserWithOutPassword['id']
-}): Promise<Group> => {
+}): Promise<MaybeNull<Group>> => {
+  if (await checkIfAlreadyInAGroup(userID)) {
+    return null
+  }
+
   const group = await create<Group>(StoreTypes.Group, id => {
     return {
       id,
@@ -30,8 +50,8 @@ export const newGroup = async ({
 
 const updateWrapper = async (
   id: User['id'],
-  isInvalid: (result: Group) => boolean,
-  modify: (result: Group) => Group
+  breakIfTruthy: (result: Group) => boolean,
+  modify: (result: Group) => Promise<Group>
 ): Promise<MaybeNull<Group>> => {
   const res = await get<Group>({
     id,
@@ -39,16 +59,11 @@ const updateWrapper = async (
     check: isGroup,
   })
 
-  if (res == null) {
+  if (res == null || breakIfTruthy(res)) {
     return null
   }
 
-  if (isInvalid(res)) {
-    return null
-  }
-
-  const modified = modify(clone(res))
-
+  const modified = await modify(clone(res))
   await update(id, modified, StoreTypes.Group)
 
   return modified
@@ -60,14 +75,64 @@ export const joinGroup = async ({
 }: Pick<User, 'id'> & { userID: UserWithOutPassword['id'] }): Promise<
   MaybeNull<Group>
 > => {
+  if (await checkIfAlreadyInAGroup(userID)) {
+    return null
+  }
+
   return await updateWrapper(
     id,
     res => res.turn != null || res.users.some(user => user.id === userID),
-    res => {
+    async res => {
       res.users.push({
         id: userID,
         sum: res.startSum,
       })
+
+      return res
+    }
+  )
+}
+
+export const deleteGroup = async ({
+  id,
+  userID,
+}: Pick<User, 'id'> & { userID: UserWithOutPassword['id'] }): Promise<
+  MaybeNull<boolean>
+> => {
+  const res = await get<Group>({
+    id,
+    type: StoreTypes.Group,
+    check: isGroup,
+  })
+
+  if (
+    res == null ||
+    res.owner !== userID ||
+    res.users.filter(user => user.id !== userID).length !== 0
+  ) {
+    return null
+  }
+
+  return await del({ id, type: StoreTypes.Group })
+}
+
+export const leaveGroup = async ({
+  id,
+  userID,
+}: Pick<User, 'id'> & { userID: UserWithOutPassword['id'] }): Promise<
+  MaybeNull<Group>
+> => {
+  return await updateWrapper(
+    id,
+    res => res.turn != null || res.users.every(user => user.id !== userID),
+    async res => {
+      const currentIndex = res.users.findIndex(item => item.id == userID)
+
+      if (currentIndex === -1) {
+        return res
+      }
+
+      res.users.splice(currentIndex, 1)
 
       return res
     }
@@ -85,7 +150,7 @@ export const updateOrder = async ({
   return await updateWrapper(
     id,
     res => res.turn != null || res.owner !== userID,
-    res => {
+    async res => {
       const max = res.users.length - 1
       for (const [key, id] of Object.entries(order)) {
         const newIndex = parseInt(key, 10)
@@ -142,7 +207,7 @@ export const updateGroup = async ({
 
       return false
     },
-    res => {
+    async res => {
       if (owner) {
         res.owner = owner
       }
@@ -159,6 +224,22 @@ export const updateGroup = async ({
         })
       }
 
+      return res
+    }
+  )
+}
+
+export const startGame = async ({
+  id,
+  userID,
+}: Pick<Group, 'id'> & {
+  userID: UserWithOutPassword['id']
+}): Promise<MaybeNull<Group>> => {
+  return await updateWrapper(
+    id,
+    res => res.turn != null || res.owner !== userID || res.users.length < 2,
+    async res => {
+      console.log('start')
       return res
     }
   )
