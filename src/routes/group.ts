@@ -39,8 +39,8 @@ export const register: Route = (app, auth) => {
       return res.sendStatus(400)
     }
 
-    await groupService.joinGroup({ id, userID: user.id })
+    const result = await groupService.joinGroup({ id, userID: user.id })
 
-    return res.sendStatus(200)
+    res.send(result)
   })
 }

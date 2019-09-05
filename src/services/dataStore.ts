@@ -58,26 +58,27 @@ export const create = async <T extends Types>(
 export const all = async (prefix: StoreTypes) =>
   await client.keys(`${prefix}:*`)
 
-export const update = async <T extends Types>(id: T['id'], data: T) => {
+export const update = async <T extends Types>(
+  id: T['id'],
+  data: T,
+  type: StoreTypes
+) => {
   if (id !== data.id) {
     return
   }
 
-  const type = toEnum<StoreTypes>(data, StoreTypes)
-  if (type == null) {
-    return
-  }
-
   const prev = await getWrapper({ id, type })
-
   if (prev == null) {
     return
   }
 
-  await client.set(id, {
-    ...prev,
-    ...data,
-  })
+  await client.set(
+    id,
+    JSON.stringify({
+      ...prev,
+      ...data,
+    })
+  )
 }
 
 type MaybeNull<T> = T | null

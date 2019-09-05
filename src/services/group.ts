@@ -1,23 +1,14 @@
-import { UserWithOutPassword, Group } from 'dataStore'
+import { UserWithOutPassword, Group, User } from 'dataStore'
 import { StoreTypes, isGroup } from '../types/dataStore'
 import { create, get, update } from './dataStore'
-
-export type CreateGroupInput = {
-  name?: string
-  startSum?: number
-  userID: UserWithOutPassword['id']
-}
-
-export type JoinGroupInput = {
-  id: Group['id']
-  userID: UserWithOutPassword['id']
-}
 
 export const newGroup = async ({
   name = '',
   startSum = 1000,
   userID,
-}: CreateGroupInput): Promise<Group> => {
+}: WithOptional<Pick<Group, 'name' | 'startSum'>, 'name' | 'startSum'> & {
+  userID: UserWithOutPassword['id']
+}): Promise<Group> => {
   const group = await create<Group>(StoreTypes.Group, id => {
     return {
       id,
@@ -38,7 +29,9 @@ export const newGroup = async ({
 export const joinGroup = async ({
   id,
   userID,
-}: JoinGroupInput): Promise<MaybeNull<Group>> => {
+}: Pick<User, 'id'> & { userID: UserWithOutPassword['id'] }): Promise<
+  MaybeNull<Group>
+> => {
   const res = await get<Group>({
     id,
     type: StoreTypes.Group,
@@ -58,9 +51,7 @@ export const joinGroup = async ({
     sum: res.startSum,
   })
 
-  await update(id, res)
-
-  console.log({ id, userID }, res)
+  await update(id, res, StoreTypes.Group)
 
   return res
 }
