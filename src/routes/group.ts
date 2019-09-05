@@ -1,6 +1,41 @@
 import { Route } from 'Route'
 import { isNumber, hasProp, nullOrEmpty } from '../utils'
 import * as groupService from '../services/group'
+import { UserWithOutPassword, Group } from 'dataStore'
+
+const parse = {
+  name(query: any): MaybeUndefined<Group['name']> {
+    return hasProp(query, 'name') &&
+      typeof query.name === 'string' &&
+      nullOrEmpty(query.name) === false
+      ? query.name.substr(0, 255)
+      : undefined
+  },
+
+  startSum(query: any): MaybeUndefined<Group['startSum']> {
+    return hasProp(query, 'startSum') &&
+      isNumber(query.startSum) &&
+      isNumber(parseInt(query.startSum))
+      ? Math.max(0, Math.min(parseInt(query.startSum), Number.MAX_SAFE_INTEGER))
+      : undefined
+  },
+
+  owner(
+    query: any,
+    userID: UserWithOutPassword['id']
+  ): MaybeUndefined<Group['owner']> {
+    return hasProp(query, 'owner') &&
+      typeof query.owner === 'string' &&
+      nullOrEmpty(query.owner) === false &&
+      userID !== query.owner
+      ? query.owner
+      : undefined
+  },
+
+  param(param: string) {
+    return nullOrEmpty(param) || param.length > 255
+  },
+}
 
 export const register: Route = (app, auth) => {
   app.get('/group', auth, async ({ query, user }, res) => {
@@ -8,27 +43,10 @@ export const register: Route = (app, auth) => {
       return res.sendStatus(400)
     }
 
-    const name: string | undefined =
-      hasProp(query, 'name') &&
-      typeof query.name === 'string' &&
-      nullOrEmpty(query.name) === false
-        ? query.name.substr(0, 255)
-        : undefined
-
-    const startSum: number | undefined =
-      hasProp(query, 'startSum') &&
-      isNumber(query.startSum) &&
-      isNumber(parseInt(query.startSum))
-        ? Math.max(
-            0,
-            Math.min(parseInt(query.startSum), Number.MAX_SAFE_INTEGER)
-          )
-        : undefined
-
     res.send(
       await groupService.newGroup({
-        name,
-        startSum,
+        name: parse.name(query),
+        startSum: parse.startSum(query),
         userID: user.id,
       })
     )
@@ -39,7 +57,7 @@ export const register: Route = (app, auth) => {
       return res.sendStatus(400)
     }
 
-    if (nullOrEmpty(id) || id.length > 255) {
+    if (parse.param(id)) {
       return res.sendStatus(400)
     }
 
@@ -47,30 +65,25 @@ export const register: Route = (app, auth) => {
   })
 
   app.get(
-    '/group/:id/change-owner',
+    '/group/:id/update',
     auth,
     async ({ params: { id }, query, user }, res) => {
       if (user == null) {
         return res.sendStatus(400)
       }
 
-      const owner =
-        hasProp(query, 'owner') &&
-        typeof query.owner === 'string' &&
-        nullOrEmpty(query.owner) === false
-          ? query.owner
-          : null
-
-      if (nullOrEmpty(id) || id.length > 255 || owner == null) {
+      if (parse.param(id)) {
         return res.sendStatus(400)
       }
 
-      if (user.id === owner) {
-        return res.sendStatus(409)
-      }
-
       res.send(
-        await groupService.changeOwner({ id, newOwner: owner, userID: user.id })
+        await groupService.updateGroup({
+          id,
+          owner: parse.owner(query, user.id),
+          name: parse.name(query),
+          startSum: parse.startSum(query),
+          userID: user.id,
+        })
       )
     }
   )
