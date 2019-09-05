@@ -1,9 +1,9 @@
 import { Route } from 'Route'
-import { isNumber, hasProp, nullOrEmpty } from '../utils'
+import { isNumber, hasProp, nullOrEmpty, parse } from '../utils'
 import * as groupService from '../services/group'
 import { UserWithOutPassword, Group } from 'dataStore'
 
-const parse = {
+const input = {
   name(query: any): MaybeUndefined<Group['name']> {
     return hasProp(query, 'name') &&
       typeof query.name === 'string' &&
@@ -32,6 +32,25 @@ const parse = {
       : undefined
   },
 
+  order(query: any): MaybeNull<{ [order: string]: string }> {
+    const order =
+      hasProp(query, 'order') && nullOrEmpty(query.order) === false
+        ? parse<{ [order: string]: string }>(query.order)
+        : null
+
+    if (
+      order == null ||
+      Object.keys(order).every(key => isNumber(key)) === false ||
+      Object.values(order).every(
+        value => !nullOrEmpty(value) && parse(value) == null
+      ) === false
+    ) {
+      return null
+    }
+
+    return order
+  },
+
   param(param: string) {
     return nullOrEmpty(param) || param.length > 255
   },
@@ -45,15 +64,15 @@ export const register: Route = (app, auth) => {
 
     res.send(
       await groupService.newGroup({
-        name: parse.name(query),
-        startSum: parse.startSum(query),
+        name: input.name(query),
+        startSum: input.startSum(query),
         userID: user.id,
       })
     )
   })
 
   app.get('/group/:id/join', auth, async ({ params: { id }, user }, res) => {
-    if (user == null || parse.param(id)) {
+    if (user == null || input.param(id)) {
       return res.sendStatus(400)
     }
 
@@ -64,16 +83,36 @@ export const register: Route = (app, auth) => {
     '/group/:id/update',
     auth,
     async ({ params: { id }, query, user }, res) => {
-      if (user == null || parse.param(id)) {
+      if (user == null || input.param(id)) {
         return res.sendStatus(400)
       }
 
       res.send(
         await groupService.updateGroup({
           id,
-          owner: parse.owner(query, user.id),
-          name: parse.name(query),
-          startSum: parse.startSum(query),
+          owner: input.owner(query, user.id),
+          name: input.name(query),
+          startSum: input.startSum(query),
+          userID: user.id,
+        })
+      )
+    }
+  )
+
+  app.get(
+    '/group/:id/order',
+    auth,
+    async ({ params: { id }, query, user }, res) => {
+      const order = input.order(query)
+
+      if (user == null || input.param(id) || order == null) {
+        return res.sendStatus(400)
+      }
+
+      res.send(
+        await groupService.updateOrder({
+          id,
+          order,
           userID: user.id,
         })
       )

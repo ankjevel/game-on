@@ -74,13 +74,48 @@ export const joinGroup = async ({
   )
 }
 
+export const updateOrder = async ({
+  id,
+  order,
+  userID,
+}: Pick<Group, 'id'> & {
+  order: { [key: string]: string }
+  userID: UserWithOutPassword['id']
+}) => {
+  return await updateWrapper(
+    id,
+    res => res.turn != null || res.owner !== userID,
+    res => {
+      const max = res.users.length - 1
+      for (const [key, id] of Object.entries(order)) {
+        const newIndex = parseInt(key, 10)
+        const currentIndex = res.users.findIndex(item => item.id == id)
+
+        if (newIndex < 0 || newIndex > max || currentIndex === newIndex) {
+          continue
+        }
+
+        const pop = res.users.splice(currentIndex, 1).pop()
+
+        if (pop == null) {
+          continue
+        }
+
+        res.users.splice(newIndex, 0, pop)
+      }
+
+      return res
+    }
+  )
+}
+
 export const updateGroup = async ({
   id,
   name,
   startSum,
   owner,
   userID,
-}: Pick<User, 'id'> & {
+}: Pick<Group, 'id'> & {
   name: MaybeUndefined<Group['name']>
   startSum: MaybeUndefined<Group['startSum']>
   owner: MaybeUndefined<Group['owner']>
