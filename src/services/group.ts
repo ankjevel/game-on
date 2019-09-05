@@ -14,6 +14,7 @@ export const newGroup = async ({
       id,
       name,
       startSum,
+      owner: userID,
       users: [
         {
           id: userID,
@@ -38,11 +39,11 @@ export const joinGroup = async ({
     check: isGroup,
   })
 
-  if (res == null) {
-    return null
-  }
-
-  if (res.users.some(user => user.id === userID) || res.turn != null) {
+  if (
+    res == null ||
+    res.users.some(user => user.id === userID) ||
+    res.turn != null
+  ) {
     return null
   }
 
@@ -50,6 +51,35 @@ export const joinGroup = async ({
     id: userID,
     sum: res.startSum,
   })
+
+  await update(id, res, StoreTypes.Group)
+
+  return res
+}
+
+export const changeOwner = async ({
+  id,
+  newOwner,
+  userID,
+}: Pick<User, 'id'> & {
+  userID: UserWithOutPassword['id']
+  newOwner: UserWithOutPassword['id']
+}): Promise<MaybeNull<Group>> => {
+  const res = await get<Group>({
+    id,
+    type: StoreTypes.Group,
+    check: isGroup,
+  })
+
+  if (
+    res == null ||
+    res.owner !== userID ||
+    res.users.find(({ id }) => id === newOwner) == null
+  ) {
+    return null
+  }
+
+  res.owner = newOwner
 
   await update(id, res, StoreTypes.Group)
 

@@ -39,8 +39,39 @@ export const register: Route = (app, auth) => {
       return res.sendStatus(400)
     }
 
-    const result = await groupService.joinGroup({ id, userID: user.id })
+    if (nullOrEmpty(id) || id.length > 255) {
+      return res.sendStatus(400)
+    }
 
-    res.send(result)
+    res.send(await groupService.joinGroup({ id, userID: user.id }))
   })
+
+  app.get(
+    '/group/:id/change-owner',
+    auth,
+    async ({ params: { id }, query, user }, res) => {
+      if (user == null) {
+        return res.sendStatus(400)
+      }
+
+      const owner =
+        hasProp(query, 'owner') &&
+        typeof query.owner === 'string' &&
+        nullOrEmpty(query.owner) === false
+          ? query.owner
+          : null
+
+      if (nullOrEmpty(id) || id.length > 255 || owner == null) {
+        return res.sendStatus(400)
+      }
+
+      if (user.id === owner) {
+        return res.sendStatus(409)
+      }
+
+      res.send(
+        await groupService.changeOwner({ id, newOwner: owner, userID: user.id })
+      )
+    }
+  )
 }

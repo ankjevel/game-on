@@ -16,6 +16,7 @@ export interface Group {
   id: string
   name: string
   startSum: number
+  owner: User['id']
   users: {
     id: User['id']
     sum: number

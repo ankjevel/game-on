@@ -1,6 +1,8 @@
+type Check = <T>(result: MaybeNull<T>) => boolean
+
 import uuid from 'uuid'
 import * as userService from './user'
-import { parse, toEnum } from '../utils'
+import { parse } from '../utils'
 import redis from '../adapters/redis'
 
 import {
@@ -15,7 +17,7 @@ import {
   User,
 } from '../types/dataStore'
 
-export { Action, GetResult, Group, StoreTypes, Types, User }
+export { Action, GetResult, Group, StoreTypes, Types, User, Check }
 
 const client = redis()
 
@@ -80,9 +82,6 @@ export const update = async <T extends Types>(
     })
   )
 }
-
-type MaybeNull<T> = T | null
-type Check = <T>(result: MaybeNull<T>) => boolean
 
 export const get = async <T extends Types>({
   type,

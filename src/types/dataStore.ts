@@ -46,6 +46,9 @@ export const isGroup = (any: any): any is Group => {
     (hasProp(any, 'name') &&
       typeof any.name === 'string' &&
       !nullOrEmpty(any.name)) &&
+    (hasProp(any, 'owner') &&
+      typeof any.owner === 'string' &&
+      !nullOrEmpty(any.owner)) &&
     (hasProp(any, 'startSum') && isNumber(any.startSum)) &&
     (hasProp(any, 'users')
       ? Array.isArray(any.users) &&

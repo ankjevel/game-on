@@ -108,6 +108,7 @@ describe('/group', () => {
       id,
       name: '',
       startSum: 1000,
+      owner: user.id,
       users: [
         {
           id: user.id,
