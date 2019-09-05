@@ -36,7 +36,7 @@ export const register: Route = app => {
   })
 
   app.get('/user/sign-in', async ({ query: { id, email, password } }, res) => {
-    if (nullOrEmpty(password) || (nullOrEmpty(email) && nullOrEmpty(email))) {
+    if (nullOrEmpty(password) || (nullOrEmpty(email) && nullOrEmpty(id))) {
       return res.sendStatus(401)
     }
 
