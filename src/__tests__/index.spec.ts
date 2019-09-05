@@ -46,6 +46,7 @@ beforeEach(() => {
   console.log = logMock
   isUserWithOutPasswordMock = (isUserWithOutPassword as unknown) as jest.Mock
   dataStoreCreate = dataStore.create as jest.Mock
+  ;(dataStore.all as jest.Mock).mockResolvedValue([])
 
   user = { id: 'foo' }
 })
