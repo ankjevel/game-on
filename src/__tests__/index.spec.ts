@@ -36,8 +36,10 @@ import app, { server } from '../index'
 
 let errorMock: jest.Mock
 let logMock: jest.Mock
-let dataStoreCreate: jest.Mock
 let isUserWithOutPasswordMock: jest.Mock
+let dataStoreMock: {
+  [key: string]: jest.Mock
+}
 beforeEach(() => {
   errorMock = jest.fn()
   logMock = jest.fn()
@@ -45,10 +47,10 @@ beforeEach(() => {
   console.error = errorMock
   console.log = logMock
   isUserWithOutPasswordMock = (isUserWithOutPassword as unknown) as jest.Mock
-  dataStoreCreate = dataStore.create as jest.Mock
-  ;(dataStore.all as jest.Mock).mockResolvedValue([])
+  dataStoreMock = (dataStore as unknown) as any
 
   user = { id: 'foo' }
+  dataStoreMock.all.mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -100,7 +102,7 @@ describe('/group', () => {
 
   it('parses the query-params', async () => {
     const innerCallback = jest.fn()
-    dataStoreCreate.mockImplementation((_, callback) => {
+    dataStoreMock.create.mockImplementation((_, callback) => {
       innerCallback(callback(id))
     })
 
@@ -160,7 +162,7 @@ describe('/group', () => {
         .get(query)
         .expect(200)
 
-      expect(dataStoreCreate, message).lastCalledWith(
+      expect(dataStore.create, message).lastCalledWith(
         dataStore.StoreTypes.Group,
         expect.any(Function)
       )
@@ -170,5 +172,19 @@ describe('/group', () => {
         ...result,
       })
     }
+  })
+
+  it('only allows the user to create if not already in a group', async () => {
+    dataStoreMock.all.mockResolvedValue(['group:key'])
+    dataStoreMock.get.mockResolvedValue({
+      users: [{ id: user.id }],
+    })
+
+    const { body } = await supertest(app)
+      .get('/group?name=foo')
+      .expect(200)
+
+    expect(body).toEqual({})
+    expect(dataStore.create).not.toBeCalled()
   })
 })
