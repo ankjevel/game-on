@@ -2,7 +2,6 @@ import { sign } from 'jsonwebtoken'
 import * as userService from '../services/user'
 import { nullOrEmpty, looksLikeEmail } from '../utils'
 import config from '../config'
-import { UserWithOutPassword } from 'dataStore'
 import Route from 'Route'
 
 const {

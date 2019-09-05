@@ -53,11 +53,7 @@ export const register: Route = (app, auth) => {
   })
 
   app.get('/group/:id/join', auth, async ({ params: { id }, user }, res) => {
-    if (user == null) {
-      return res.sendStatus(400)
-    }
-
-    if (parse.param(id)) {
+    if (user == null || parse.param(id)) {
       return res.sendStatus(400)
     }
 
@@ -68,11 +64,7 @@ export const register: Route = (app, auth) => {
     '/group/:id/update',
     auth,
     async ({ params: { id }, query, user }, res) => {
-      if (user == null) {
-        return res.sendStatus(400)
-      }
-
-      if (parse.param(id)) {
+      if (user == null || parse.param(id)) {
         return res.sendStatus(400)
       }
 
