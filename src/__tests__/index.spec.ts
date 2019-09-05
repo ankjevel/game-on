@@ -1,7 +1,6 @@
 import supertest from 'supertest'
 import * as dataStore from '../services/dataStore'
-import { CreateGroupInput } from 'dataStore'
-import { isUser } from '../types/dataStore'
+import { isUserWithOutPassword } from '../types/dataStore'
 
 jest.mock('../config', () => ({
   express: {
@@ -38,14 +37,14 @@ import app, { server } from '../index'
 let errorMock: jest.Mock
 let logMock: jest.Mock
 let dataStoreCreate: jest.Mock
-let isUserMock: jest.Mock
+let isUserWithOutPasswordMock: jest.Mock
 beforeEach(() => {
   errorMock = jest.fn()
   logMock = jest.fn()
 
   console.error = errorMock
   console.log = logMock
-  isUserMock = (isUser as unknown) as jest.Mock
+  isUserWithOutPasswordMock = (isUserWithOutPassword as unknown) as jest.Mock
   dataStoreCreate = dataStore.create as jest.Mock
 
   user = { id: 'foo' }
@@ -80,18 +79,18 @@ describe('/favicon.ico', () => {
 
 describe('/group', () => {
   beforeEach(() => {
-    isUserMock.mockReturnValue(true)
+    isUserWithOutPasswordMock.mockReturnValue(true)
   })
 
   it('requires a valid token', async () => {
-    isUserMock.mockReturnValue(false)
+    isUserWithOutPasswordMock.mockReturnValue(false)
 
     await supertest(app)
       .get('/group')
       .expect(401)
 
     user = null
-    isUserMock.mockReturnValue(true)
+    isUserWithOutPasswordMock.mockReturnValue(true)
 
     await supertest(app)
       .get('/group')
@@ -109,26 +108,47 @@ describe('/group', () => {
       id,
       name: '',
       startSum: 1000,
-      users: [user.id],
+      users: [
+        {
+          id: user.id,
+          sum: 1000,
+        },
+      ],
     }
 
-    const tests: (
-      | [string, Omit<CreateGroupInput, 'userID'>]
-      | [string, Omit<CreateGroupInput, 'userID'>, string])[] = [
+    const tests: ([string, any] | [string, any, string])[] = [
       ['/group', {}],
       ['/group?', {}],
       ['/group?name=foo', { name: 'foo' }],
       ['/group?name=[fsffsf];;;', { name: '[fsffsf];;;' }],
       ['/group?startSum=[fsffsf];;;', {}],
-      ['/group?startSum=1337', { startSum: 1337 }],
-      ['/group?startSum= 1337', { startSum: 1337 }],
-      ['/group?startSum=1337.1337', { startSum: 1337 }],
-      ['/group?startSum=1337.8', { startSum: 1337 }],
+      [
+        '/group?startSum=1337',
+        { startSum: 1337, users: [{ id: user.id, sum: 1337 }] },
+      ],
+      [
+        '/group?startSum= 1337',
+        { startSum: 1337, users: [{ id: user.id, sum: 1337 }] },
+      ],
+      [
+        '/group?startSum=1337.1337',
+        { startSum: 1337, users: [{ id: user.id, sum: 1337 }] },
+      ],
+      [
+        '/group?startSum=1337.8',
+        { startSum: 1337, users: [{ id: user.id, sum: 1337 }] },
+      ],
       ['/group?startSum=1337,8', {}],
-      ['/group?startSum=-1337', { startSum: 0 }],
+      [
+        '/group?startSum=-1337',
+        { startSum: 0, users: [{ id: user.id, sum: 0 }] },
+      ],
       [
         '/group?startSum=99999999999999999999999',
-        { startSum: Number.MAX_SAFE_INTEGER },
+        {
+          startSum: Number.MAX_SAFE_INTEGER,
+          users: [{ id: user.id, sum: Number.MAX_SAFE_INTEGER }],
+        },
         'set max-value',
       ],
     ]

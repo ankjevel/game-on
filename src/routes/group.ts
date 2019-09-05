@@ -1,7 +1,6 @@
 import { Route } from 'Route'
 import { isNumber, hasProp, nullOrEmpty } from '../utils'
 import * as groupService from '../services/group'
-import { UserWithOutPassword } from 'dataStore'
 
 export const register: Route = (app, auth) => {
   app.get('/group', auth, async ({ query, user }, res) => {
@@ -35,13 +34,13 @@ export const register: Route = (app, auth) => {
     )
   })
 
-  app.get(
-    '/group/:id/join',
-    auth,
-    async ({ params: { id }, query, user }, res) => {
-      console.log({ id, query, user })
-
-      return res.sendStatus(200)
+  app.get('/group/:id/join', auth, async ({ params: { id }, user }, res) => {
+    if (user == null) {
+      return res.sendStatus(400)
     }
-  )
+
+    await groupService.joinGroup({ id, userID: user.id })
+
+    return res.sendStatus(200)
+  })
 }

@@ -16,20 +16,12 @@ export interface Group {
   id: string
   name: string
   startSum: number
-  users: User['id'][]
+  users: {
+    id: User['id']
+    sum: number
+  }[]
+  turn?: number
   action?: Action
-}
-
-export type CreateGroupInput = {
-  name?: string
-  startSum?: number
-  userID: User['id']
-}
-
-export type CreateUserInput = {
-  name: string
-  email: string
-  password: string
 }
 
 export type GetResult = null | User | Group | Action

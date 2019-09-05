@@ -1,14 +1,13 @@
-import MaybeNull from 'MaybeNull'
-import { CreateUserInput, User, UserWithOutPassword } from 'dataStore'
-import { create, StoreTypes, all, get } from './dataStore'
-import { isUser } from '../types/dataStore'
+import { User, UserWithOutPassword } from 'dataStore'
+import { isUser, StoreTypes } from '../types/dataStore'
+import { create, all, get } from './dataStore'
 import { predictable } from '../adapters/encrypt'
 
 export const newUser = async ({
   name,
   email,
   password,
-}: CreateUserInput): Promise<UserWithOutPassword> => {
+}: Pick<User, 'name' | 'email' | 'password'>): Promise<UserWithOutPassword> => {
   const user = await create<User>(StoreTypes.User, id => {
     return {
       id,
@@ -55,7 +54,10 @@ const checkEach = async (
   return user
 }
 
-export const checkDuplicate = async ({ id, email }: User) =>
+export const checkDuplicate = async ({
+  id,
+  email,
+}: Pick<User, 'id' | 'email'>) =>
   await checkEach(
     res => {
       if (res.email.toLowerCase() === email.toLowerCase()) {
@@ -69,7 +71,7 @@ export const checkDuplicate = async ({ id, email }: User) =>
     }
   )
 
-const getUser = async (id: string): Promise<MaybeNull<User>> =>
+const getUser = async (id: User['id']): Promise<MaybeNull<User>> =>
   await get<User>({
     id,
     type: StoreTypes.User,
@@ -80,11 +82,10 @@ export const checkAuthAndReturnUser = async ({
   id,
   email,
   password,
-}: {
-  id?: string
-  email?: string
-  password: string
-}): Promise<MaybeNull<UserWithOutPassword>> => {
+}: Pick<
+  WithOptional<User, 'id' | 'email'>,
+  'id' | 'email' | 'password'
+>): Promise<MaybeNull<UserWithOutPassword>> => {
   let user: MaybeNull<User> = null
   if (id != null) {
     user = await getUser(id)

@@ -28,3 +28,8 @@ declare module '@iteam/encrypt' {
     encoding?: 'base64' | string
   ): string | Buffer
 }
+
+declare type WithOptional<T, K extends keyof T> = Omit<T, K> &
+  Partial<Pick<T, K>>
+
+declare type MaybeNull<T> = T | null

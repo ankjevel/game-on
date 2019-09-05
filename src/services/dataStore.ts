@@ -5,8 +5,6 @@ import redis from '../adapters/redis'
 
 import {
   Action,
-  CreateGroupInput,
-  CreateUserInput,
   GetResult,
   Group,
   isAction,
@@ -17,16 +15,7 @@ import {
   User,
 } from '../types/dataStore'
 
-export {
-  Action,
-  CreateGroupInput,
-  CreateUserInput,
-  GetResult,
-  Group,
-  StoreTypes,
-  Types,
-  User,
-}
+export { Action, GetResult, Group, StoreTypes, Types, User }
 
 const client = redis()
 
@@ -67,7 +56,7 @@ export const create = async <T extends Types>(
 }
 
 export const all = async (prefix: StoreTypes) =>
-  (await client.keys(`${prefix}:*`)) || []
+  await client.keys(`${prefix}:*`)
 
 export const update = async <T extends Types>(id: T['id'], data: T) => {
   if (id !== data.id) {

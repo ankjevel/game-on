@@ -2,11 +2,11 @@ import { Application, RequestHandler } from 'express'
 import { readdirSync, lstatSync } from 'fs'
 import { join, basename } from 'path'
 import { packageJSON } from '../config'
-import { isUser } from '../types/dataStore'
+import { isUserWithOutPassword } from '../types/dataStore'
 import Route from 'Route'
 
 export const requireAuth: RequestHandler = (req, res, next) => {
-  if (!isUser(req.user)) {
+  if (!isUserWithOutPassword(req.user)) {
     return res.sendStatus(401)
   }
 

@@ -5,9 +5,16 @@ import { popSession } from './session'
 export const messageListener = (
   channel: string,
   onMessage: (message: string) => Promise<void>
-) => {
-  return setImmediate(async () => {
-    const message = await popSession(channel)
+) =>
+  setImmediate(async () => {
+    let message: string | null
+
+    try {
+      message = await popSession(channel)
+    } catch (error) {
+      console.error(error)
+      return process.exit(0)
+    }
 
     if (!message) {
       await wait(1000)
@@ -21,8 +28,7 @@ export const messageListener = (
     await onMessage(message)
     await unlock(channel)
 
-    messageListener(channel, onMessage)
+    return messageListener(channel, onMessage)
   })
-}
 
 export default messageListener
