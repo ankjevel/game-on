@@ -58,13 +58,12 @@ export const newAction = async ({
     return
   }
 
-  console.log('this', { action, userID, newAction })
-
   await push({ action, userID, newAction })
 }
 
 mainLoop(CHANNEL, async message => {
   const parsed = parse<Message>(message)
+
   if (!isMessage(parsed)) {
     return
   }
