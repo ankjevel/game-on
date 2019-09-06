@@ -8,7 +8,7 @@ export interface ITurn<T> {
 
 export interface IActionRunning<T> extends Action {
   round: 0 | 1 | 2 | 3
-  grupID: Group['id']
+  groupID: Group['id']
   queued: ITurn<T>
   turn: ITurn<T>[]
   button: User['id']

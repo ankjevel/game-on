@@ -41,7 +41,7 @@ export const register: Route = (app, auth) => {
       }
 
       await actionService.newAction({
-        id,
+        actionID: id,
         groupID: group,
         userID: user.id,
         newAction: action,

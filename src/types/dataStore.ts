@@ -1,10 +1,4 @@
-import {
-  hasProp,
-  looksLikeEmail,
-  isNumber,
-  nullOrEmpty,
-  toEnum,
-} from '../utils'
+import { hasProp, looksLikeEmail, isNumber, nullOrEmpty } from '../utils'
 import {
   Action,
   IActionRunning,
@@ -21,7 +15,7 @@ export enum StoreTypes {
   Action = 'action',
   Group = 'group',
   User = 'user',
-  ActionRunning = 'actionRunning',
+  ActionRunning = 'action:running',
 }
 
 export type ActionRunning = IActionRunning<NewAction>
@@ -85,7 +79,7 @@ export const isNewAction = (
 export { Action, Group, User, GetResult }
 
 export const checkId = (input: string, type: StoreTypes) =>
-  input.split(':')[0] === type
+  input.split(':')[0] === type.split(':')[0]
 
 export const isUser = (any: User | unknown): any is User =>
   any != null &&
@@ -150,7 +144,7 @@ export const isActionRunning = (
 ): any is ActionRunning =>
   isAction(any) &&
   (hasProp<ActionRunning>(any, 'round') && isNumber(any.round)) &&
-  (hasProp(any, 'grupID') && checkId(any.grupID, StoreTypes.Group)) &&
+  (hasProp(any, 'groupID') && checkId(any.groupID, StoreTypes.Group)) &&
   (hasProp(any, 'queued') && isTurn(any.queued)) &&
   (hasProp(any, 'turn') && any.turn.every(turn => isTurn(turn))) &&
   (hasProp(any, 'button') && checkId(any.button, StoreTypes.User)) &&

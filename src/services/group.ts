@@ -293,7 +293,7 @@ export const startGame = async ({
       const [{ id: playerOne }, { id: playerTwo }] = res.users
       const action = await create<ActionRunning>(StoreTypes.Action, id => ({
         id,
-        grupID: res.id,
+        groupID: res.id,
         queued: {},
         button: playerOne,
         big: playerTwo,

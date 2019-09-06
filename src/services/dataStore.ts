@@ -23,7 +23,7 @@ export { Action, GetResult, Group, StoreTypes, Types, User, Check }
 
 const client = redis()
 
-export const newId = (type: StoreTypes) => `${type}:${uuid.v4()}`
+export const newId = (type: StoreTypes) => `${type.split(':')[0]}:${uuid.v4()}`
 
 export const stripTag = (input: string) => input.split(':')[1] || ''
 
@@ -60,7 +60,7 @@ export const create = async <T extends Types>(
 }
 
 export const all = async (prefix: StoreTypes) =>
-  await client.keys(`${prefix}:*`)
+  await client.keys(`${prefix.split(':')[0]}:*`)
 
 export const update = async <T extends Types>(
   id: T['id'],
@@ -86,12 +86,13 @@ export const update = async <T extends Types>(
 }
 
 const getQuery = ({
-  type,
+  type: preType,
   id,
 }: {
   type: StoreTypes
   id: string
 }): MaybeNull<string> => {
+  const type = preType.split(':')[0]
   const query =
     id.includes(':') === false
       ? type == null
