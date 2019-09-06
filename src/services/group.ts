@@ -303,7 +303,7 @@ export const startGame = async ({
         ],
         folded: [],
         pot: res.blind.small + res.blind.big,
-        round: 1,
+        round: 0,
       }))
 
       if (action == null) {
