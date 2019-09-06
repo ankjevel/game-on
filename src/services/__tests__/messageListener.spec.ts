@@ -10,7 +10,10 @@ import * as service from '../messageListener'
 
 beforeEach(() => {
   console.error = jest.fn()
-  ;(jest.spyOn(process, 'exit') as any).mockImplementation(() => {})
+
+  const processSpy = jest.spyOn(process, 'exit') as any
+
+  processSpy.mockImplementation(() => {})
 })
 
 describe('#messageListener', () => {

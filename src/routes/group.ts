@@ -5,7 +5,7 @@ import { UserWithOutPassword, Group } from 'dataStore'
 
 const input = {
   name(input: any): MaybeUndefined<Group['name']> {
-    return hasProp(input, 'name') &&
+    return hasProp<Group>(input, 'name') &&
       typeof input.name === 'string' &&
       nullOrEmpty(input.name) === false
       ? input.name.substr(0, 255)
@@ -13,10 +13,13 @@ const input = {
   },
 
   startSum(input: any): MaybeUndefined<Group['startSum']> {
-    return hasProp(input, 'startSum') &&
+    return hasProp<Group>(input, 'startSum') &&
       isNumber(input.startSum) &&
-      isNumber(parseInt(input.startSum))
-      ? Math.max(0, Math.min(parseInt(input.startSum), Number.MAX_SAFE_INTEGER))
+      isNumber(parseInt((input as any).startSum))
+      ? Math.max(
+          0,
+          Math.min(parseInt((input as any).startSum), Number.MAX_SAFE_INTEGER)
+        )
       : undefined
   },
 
@@ -24,7 +27,7 @@ const input = {
     input: any,
     userID: UserWithOutPassword['id']
   ): MaybeUndefined<Group['owner']> {
-    return hasProp(input, 'owner') &&
+    return hasProp<Group>(input, 'owner') &&
       typeof input.owner === 'string' &&
       nullOrEmpty(input.owner) === false &&
       userID !== input.owner

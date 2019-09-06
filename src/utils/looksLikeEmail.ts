@@ -1,4 +1,4 @@
-export default (input?: string) => {
+export default (input?: string): input is string => {
   if (input == null) {
     return false
   }

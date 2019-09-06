@@ -240,7 +240,10 @@ export const startGame = async ({
     id,
     res => res.turn != null || res.owner !== userID || res.users.length < 2,
     async res => {
-      res.action = await create<Action>(StoreTypes.Action, id => ({ id }))
+      const action = await create<Action>(StoreTypes.Action, id => ({ id }))
+
+      res.action = action.id
+
       return res
     }
   )

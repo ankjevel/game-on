@@ -2,7 +2,8 @@
 // import redis from '../adapters/redis'
 // const client = redis()
 
-import { Group, StoreTypes } from '../types/dataStore'
+import { UserWithOutPassword, Action, Group, User } from 'dataStore'
+import { StoreTypes as Type } from '../types/dataStore'
 import { getWrapper as getFromStore } from './dataStore'
 import { pushSession } from './session'
 import { parse } from '../utils'
@@ -10,8 +11,8 @@ import mainLoop from './messageListener'
 
 const CHANNEL = 'message'
 
-const getGroup = async (id: Group['id']): Promise<Group | null> => {
-  const result = await getFromStore<Group>({ id, type: StoreTypes.Group })
+const getGroup = async (id: Group['id']): Promise<MaybeNull<Group>> => {
+  const result = await getFromStore<Group>({ id, type: Type.Group })
 
   if (result == null) {
     return null
@@ -20,7 +21,7 @@ const getGroup = async (id: Group['id']): Promise<Group | null> => {
   return result
 }
 
-export const queueAction = async (group: Group | null) => {
+export const queueAction = async (group: MaybeNull<Group>) => {
   if (group == null) {
     throw new Error('wrong input')
   }
@@ -31,28 +32,35 @@ export const queueAction = async (group: Group | null) => {
     throw new Error('missing data')
   }
 
-  if (group.action == null && fromDB.action == null) {
-    // no action has been made
-  }
-
-  if (group.action == null && fromDB.action != null) {
-    // client is not updated
-  }
-
-  if (group.action != null && fromDB.action == null) {
-    // server has not been updated
-  }
-
-  if (group.action != null && fromDB.action != null) {
-    // handle diff
-  }
+  console.log(group, fromDB)
 }
 
 export const push = async (message: any) => {
   await pushSession({ channel: CHANNEL, message: JSON.stringify(message) })
 }
-;(async () => {
-  mainLoop(CHANNEL, async message => {
-    console.log(parse(message))
-  })
-})()
+
+export const newAction = async ({
+  id,
+  groupID,
+  userID,
+}: {
+  id: Action['id']
+  groupID: Group['id']
+  userID: UserWithOutPassword['id']
+}) => {
+  const action = await getFromStore<Action>({ id, type: Type.Action })
+  const group = await getFromStore<Group>({ id: groupID, type: Type.Group })
+  if (
+    action == null ||
+    group == null ||
+    group.users.some(user => user.id === userID) === false
+  ) {
+    return
+  }
+
+  console.log({ action, group, userID })
+}
+
+mainLoop(CHANNEL, async message => {
+  console.log(parse(message))
+})

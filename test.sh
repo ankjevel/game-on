@@ -116,9 +116,9 @@ last|jq -c '.users[0].sum'
 
 print "start"
 put "/group/${group}/start" $header_1
-action_id=`last|jq .action.id|strip`
+action_id=`last|jq .action|strip`
 echo $action_id
 
-echo
-echo
-get "/action/${action_id}/${group}" $header_1 && last
+post "/action/${action_id}/${group}" $header_2 '{"type":"rise"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"call"}'

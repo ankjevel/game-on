@@ -1,6 +1,11 @@
 export interface Action {
   id: string
-  lastAction?: string
+}
+export interface IActionRunning<T> extends Action {
+  queued: { [user: string]: T }[]
+  next: User['id']
+  last: User['id']
+  grupID: Group['id']
 }
 
 export interface User {
@@ -22,7 +27,7 @@ export interface Group {
     sum: number
   }[]
   turn?: number
-  action?: Action
+  action?: Action['id']
 }
 
 export type GetResult = null | User | Group | Action
