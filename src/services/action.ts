@@ -1,41 +1,44 @@
-// import uuid from 'uuid'
-// import redis from '../adapters/redis'
-// const client = redis()
-
 import { UserWithOutPassword, Action, Group, User } from 'dataStore'
-import { StoreTypes as Type } from '../types/dataStore'
+import {
+  StoreTypes as Type,
+  NewAction,
+  isAction,
+  checkId,
+  isNewAction,
+} from '../types/dataStore'
 import { getWrapper as getFromStore } from './dataStore'
 import { pushSession } from './session'
-import { parse } from '../utils'
+import { parse, hasProp } from '../utils'
 import mainLoop from './messageListener'
 
 const CHANNEL = 'message'
 
-const getGroup = async (id: Group['id']): Promise<MaybeNull<Group>> => {
-  const result = await getFromStore<Group>({ id, type: Type.Group })
-
-  if (result == null) {
-    return null
+type Message = {
+  action: Action
+  groupID: Group['id']
+  newAction: {
+    [userID: string]: NewAction
   }
-
-  return result
 }
 
-export const queueAction = async (group: MaybeNull<Group>) => {
-  if (group == null) {
-    throw new Error('wrong input')
-  }
-
-  const fromDB = await getGroup(group.id)
-
-  if (fromDB == null) {
-    throw new Error('missing data')
-  }
-
-  console.log(group, fromDB)
+const isMessage = (input: Message | any): input is Message => {
+  return (
+    input != null &&
+    hasProp(input, 'action') &&
+    isAction((input as any).action) &&
+    hasProp(input, 'groupID') &&
+    checkId((input as any).groupID, Type.Group) &&
+    hasProp(input, 'newAction') &&
+    checkId(Object.keys((input as any).newAction).pop() || '', Type.User) &&
+    isNewAction(Object.values((input as any).newAction).pop())
+  )
 }
 
-export const push = async (message: any) => {
+export const push = async (message: Message | any) => {
+  if (!isMessage(message)) {
+    return
+  }
+
   await pushSession({ channel: CHANNEL, message: JSON.stringify(message) })
 }
 
@@ -43,10 +46,12 @@ export const newAction = async ({
   id,
   groupID,
   userID,
+  newAction,
 }: {
   id: Action['id']
   groupID: Group['id']
   userID: UserWithOutPassword['id']
+  newAction: NewAction
 }) => {
   const action = await getFromStore<Action>({ id, type: Type.Action })
   const group = await getFromStore<Group>({ id: groupID, type: Type.Group })
@@ -58,9 +63,21 @@ export const newAction = async ({
     return
   }
 
-  console.log({ action, group, userID })
+  await push({
+    action,
+    groupID: group.id,
+    newAction: {
+      [userID]: newAction,
+    },
+  })
 }
 
 mainLoop(CHANNEL, async message => {
-  console.log(parse(message))
+  const parsed = parse<Message>(message)
+  if (!isMessage(parsed)) {
+    return
+  }
+
+  console.log('new message')
+  console.log(parsed)
 })

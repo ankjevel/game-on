@@ -1,4 +1,4 @@
-type Check = <T>(result: MaybeNull<T>) => boolean
+type Check = <T>(result: T) => boolean
 
 import uuid from 'uuid'
 import * as userService from './user'

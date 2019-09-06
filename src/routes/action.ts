@@ -1,22 +1,19 @@
 import Route from 'Route'
-import { nullOrEmpty, hasProp, isNumber } from '../utils'
+import { nullOrEmpty, hasProp, isNumber, toEnum } from '../utils'
 import * as actionService from '../services/action'
-import { Actions } from '../types/dataStore'
+import { NewAction, NewActionEnum, isNewAction } from '../types/dataStore'
 
 const input = {
-  type(input: any): MaybeNull<Actions> {
-    if (hasProp<Actions>(input, 'type')) {
-      console.log(input.type)
-    }
-    return null
+  type(input: NewAction): MaybeUndefined<NewAction['type']> {
+    return hasProp(input, 'type') && toEnum(input.type, NewActionEnum) != null
+      ? input.type
+      : undefined
   },
 
-  value(input: any): MaybeUndefined<number> {
-    if (hasProp<Actions>(input, 'value') && isNumber(input.value)) {
-      return input.value
-    }
-
-    return
+  value(input: NewAction): MaybeUndefined<NewAction['value']> {
+    return hasProp(input, 'value') && isNumber(input.value)
+      ? input.value
+      : undefined
   },
 }
 
@@ -34,10 +31,21 @@ export const register: Route = (app, auth) => {
         return res.sendStatus(400)
       }
 
-      input.type(body)
-      input.value(body)
+      const action = {
+        type: input.type(body),
+        value: input.value(body),
+      }
 
-      await actionService.newAction({ id, groupID: group, userID: user.id })
+      if (!isNewAction(action)) {
+        return res.sendStatus(400)
+      }
+
+      await actionService.newAction({
+        id,
+        groupID: group,
+        userID: user.id,
+        newAction: action,
+      })
 
       res.sendStatus(200)
     }

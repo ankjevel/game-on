@@ -14,21 +14,49 @@ export enum StoreTypes {
   User = 'user',
 }
 
-export type ActionRunning = IActionRunning<Actions>
+export type ActionRunning = IActionRunning<NewAction>
 
-export enum ActionsEnum {
-  Leave,
-  Join,
-  Check,
-  Call,
-  Rise,
-  AllIn,
-  Bank,
+export enum NewActionEnum {
+  AllIn = 'allIn',
+  Bank = 'bank',
+  Big = 'big',
+  Call = 'call',
+  Check = 'check',
+  Join = 'join',
+  Leave = 'leave',
+  Rise = 'rise',
+  Small = 'small',
 }
 
-export type Actions = {
-  type: ActionsEnum
+export type NewAction = {
+  type: NewActionEnum
   value?: number
+}
+
+export const isNewActionType = (any: any): any is NewActionEnum =>
+  Object.values(NewActionEnum).includes(any)
+
+export const isNewAction = (any: NewAction | unknown): any is NewAction => {
+  if (
+    !hasProp<NewAction>(any, 'type') ||
+    !isNewActionType((any as any).type) ||
+    (hasProp<NewAction>(any, 'value') && any.value != null
+      ? !isNumber((any as any).value)
+      : false)
+  ) {
+    return false
+  }
+
+  switch (any.type) {
+    case NewActionEnum.AllIn:
+    case NewActionEnum.Big:
+    case NewActionEnum.Call:
+    case NewActionEnum.Check:
+    case NewActionEnum.Small:
+      return isNumber(any.value) === false
+    default:
+      return isNumber(any.value)
+  }
 }
 
 export { Action, Group, User, GetResult }
@@ -36,46 +64,48 @@ export { Action, Group, User, GetResult }
 export const checkId = (input: string, type: StoreTypes) =>
   input.split(':')[0] === type
 
-export const isUser = (any: any): any is User => {
+export const isUser = (any: User | unknown): any is User => {
   return (
     any != null &&
     (hasProp<User>(any, 'id') &&
       !nullOrEmpty(any.id) &&
       checkId(any.id, StoreTypes.User)) &&
-    (hasProp<User>(any, 'email') &&
+    (hasProp(any, 'email') &&
       !nullOrEmpty(any.email) &&
       looksLikeEmail(any.email)) &&
-    (hasProp<User>(any, 'password') && !nullOrEmpty(any.password))
+    (hasProp(any, 'password') && !nullOrEmpty(any.password))
   )
 }
 
-export const isUserWithOutPassword = (any: any): any is UserWithOutPassword => {
+export const isUserWithOutPassword = (
+  any: UserWithOutPassword | unknown
+): any is UserWithOutPassword => {
   return (
     any != null &&
     (hasProp<UserWithOutPassword>(any, 'id') &&
       !nullOrEmpty(any.id) &&
       checkId(any.id, StoreTypes.User)) &&
-    (hasProp<UserWithOutPassword>(any, 'email') &&
+    (hasProp(any, 'email') &&
       !nullOrEmpty(any.email) &&
       looksLikeEmail(any.email))
   )
 }
 
-export const isGroup = (any: any): any is Group => {
+export const isGroup = (any: Group | unknown): any is Group => {
   return (
     any != null &&
     (hasProp<Group>(any, 'id') &&
       typeof any.id === 'string' &&
       !nullOrEmpty(any.id) &&
       checkId(any.id, StoreTypes.Group)) &&
-    (hasProp<Group>(any, 'name') &&
+    (hasProp(any, 'name') &&
       typeof any.name === 'string' &&
       !nullOrEmpty(any.name)) &&
-    (hasProp<Group>(any, 'owner') &&
+    (hasProp(any, 'owner') &&
       typeof any.owner === 'string' &&
       !nullOrEmpty(any.owner)) &&
-    (hasProp<Group>(any, 'startSum') && isNumber(any.startSum)) &&
-    (hasProp<Group>(any, 'users')
+    (hasProp(any, 'startSum') && isNumber(any.startSum)) &&
+    (hasProp(any, 'users')
       ? Array.isArray(any.users) &&
         (any.users as Group['users']).every(
           ({ id, sum }) => checkId(id, StoreTypes.User) && isNumber(sum)
@@ -87,7 +117,7 @@ export const isGroup = (any: any): any is Group => {
   )
 }
 
-export const isAction = (any: any): any is Action => {
+export const isAction = (any: Action | unknown): any is Action => {
   return (
     any != null &&
     hasProp<Action>(any, 'id') &&

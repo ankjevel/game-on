@@ -114,6 +114,7 @@ describe('/group', () => {
       name: '',
       startSum: 1000,
       owner: user.id,
+      blind: 5,
       users: [
         {
           id: user.id,

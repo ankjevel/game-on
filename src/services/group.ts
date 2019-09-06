@@ -3,6 +3,8 @@ import { create, get, all, update, del } from './dataStore'
 import { StoreTypes, isGroup } from '../types/dataStore'
 import { clone } from '../utils'
 
+export type Order = { [order: string]: string }
+
 const checkIfAlreadyInAGroup = async (id: UserWithOutPassword['id']) => {
   for (const key of await all(StoreTypes.Group)) {
     const res = await get<Group>({
@@ -22,8 +24,12 @@ const checkIfAlreadyInAGroup = async (id: UserWithOutPassword['id']) => {
 export const newGroup = async ({
   name = '',
   startSum = 1000,
+  blind = 5,
   userID,
-}: WithOptional<Pick<Group, 'name' | 'startSum'>, 'name' | 'startSum'> & {
+}: WithOptional<
+  Pick<Group, 'name' | 'startSum' | 'blind'>,
+  'name' | 'startSum' | 'blind'
+> & {
   userID: UserWithOutPassword['id']
 }): Promise<MaybeNull<Group>> => {
   if (await checkIfAlreadyInAGroup(userID)) {
@@ -35,6 +41,7 @@ export const newGroup = async ({
       id,
       name,
       startSum,
+      blind,
       owner: userID,
       users: [
         {
@@ -145,7 +152,7 @@ export const updateOrder = async ({
   order,
   userID,
 }: Pick<Group, 'id'> & {
-  order: { [key: string]: string }
+  order: Order
   userID: UserWithOutPassword['id']
 }) => {
   return await updateWrapper(
@@ -179,14 +186,23 @@ export const updateGroup = async ({
   id,
   name,
   startSum,
+  blind,
   owner,
   userID,
 }: Pick<Group, 'id'> & {
   name: MaybeUndefined<Group['name']>
   startSum: MaybeUndefined<Group['startSum']>
+  blind: MaybeUndefined<Group['blind']>
   owner: MaybeUndefined<Group['owner']>
   userID: UserWithOutPassword['id']
 }): Promise<MaybeNull<Group>> => {
+  const update = {
+    blind: blind != null,
+    name: name != null,
+    owner: owner != null,
+    startSum: startSum != null,
+  }
+
   return await updateWrapper(
     id,
     res => {
@@ -194,30 +210,38 @@ export const updateGroup = async ({
         return true
       }
 
-      if (owner && res.users.find(({ id }) => id === owner) == null) {
-        return true
+      if (blind && res.blind === blind) {
+        update.blind = false
       }
 
       if (name && res.name === name) {
-        return true
+        update.name = false
+      }
+
+      if (owner && res.users.find(({ id }) => id === owner) == null) {
+        update.owner = false
       }
 
       if (startSum && res.startSum === startSum) {
-        return true
+        update.startSum = false
       }
 
-      return false
+      return Object.values(update).every(value => value === false)
     },
     async res => {
-      if (owner) {
-        res.owner = owner
+      if (update.blind && blind) {
+        res.blind = blind
       }
 
-      if (name) {
+      if (update.name && name) {
         res.name = name
       }
 
-      if (startSum) {
+      if (update.owner && owner) {
+        res.owner = owner
+      }
+
+      if (update.startSum && startSum) {
         res.startSum = startSum
 
         res.users.forEach(user => {

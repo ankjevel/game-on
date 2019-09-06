@@ -4,7 +4,7 @@ export interface Action {
 export interface IActionRunning<T> extends Action {
   queued: { [user: string]: T }[]
   next: User['id']
-  last: User['id']
+  button: User['id']
   grupID: Group['id']
 }
 
@@ -27,6 +27,7 @@ export interface Group {
     sum: number
   }[]
   turn?: number
+  blind: number
   action?: Action['id']
 }
 

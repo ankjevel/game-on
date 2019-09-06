@@ -4,15 +4,16 @@ import * as groupService from '../services/group'
 import { UserWithOutPassword, Group } from 'dataStore'
 
 const input = {
-  name(input: any): MaybeUndefined<Group['name']> {
-    return hasProp<Group>(input, 'name') &&
+  name(input: Group | unknown): MaybeUndefined<Group['name']> {
+    return input != null &&
+      hasProp<Group>(input, 'name') &&
       typeof input.name === 'string' &&
       nullOrEmpty(input.name) === false
       ? input.name.substr(0, 255)
       : undefined
   },
 
-  startSum(input: any): MaybeUndefined<Group['startSum']> {
+  startSum(input: Group | unknown): MaybeUndefined<Group['startSum']> {
     return hasProp<Group>(input, 'startSum') &&
       isNumber(input.startSum) &&
       isNumber(parseInt((input as any).startSum))
@@ -24,7 +25,7 @@ const input = {
   },
 
   owner(
-    input: any,
+    input: any | Group,
     userID: UserWithOutPassword['id']
   ): MaybeUndefined<Group['owner']> {
     return hasProp<Group>(input, 'owner') &&
@@ -35,7 +36,7 @@ const input = {
       : undefined
   },
 
-  order(order: any): MaybeNull<{ [order: string]: string }> {
+  order(order?: groupService.Order): MaybeNull<groupService.Order> {
     if (
       order == null ||
       Object.keys(order).every(key => isNumber(key)) === false ||
@@ -51,6 +52,17 @@ const input = {
 
   param(param: string) {
     return nullOrEmpty(param) || param.length > 255
+  },
+
+  blind(input: Group | unknown): MaybeUndefined<Group['blind']> {
+    return hasProp<Group>(input, 'blind') &&
+      isNumber(input.blind) &&
+      isNumber(parseInt((input as any).blind))
+      ? Math.max(
+          0,
+          Math.min(parseInt((input as any).blind), Number.MAX_SAFE_INTEGER)
+        )
+      : undefined
   },
 }
 
@@ -123,6 +135,7 @@ export const register: Route = (app, auth) => {
       owner: input.owner(body, user.id),
       name: input.name(body),
       startSum: input.startSum(body),
+      blind: input.blind(body),
       userID: user.id,
     })
 
