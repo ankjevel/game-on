@@ -1,11 +1,25 @@
 export interface Action {
   id: string
 }
+
+export interface ITurn<T> {
+  [userID: string]: T
+}
+
 export interface IActionRunning<T> extends Action {
-  queued: { [user: string]: T }[]
-  next: User['id']
-  button: User['id']
+  round: 1 | 2 | 3
   grupID: Group['id']
+  queued: ITurn<T>
+  turn: ITurn<T>[]
+  button: User['id']
+  big: User['id']
+  pot: number
+
+  folded: User['id'][]
+
+  sittingOut?: User['id'][]
+  history?: ITurn<T>[]
+  bust?: User['id'][]
 }
 
 export interface User {
@@ -26,8 +40,10 @@ export interface Group {
     id: User['id']
     sum: number
   }[]
-  turn?: number
-  blind: number
+  blind: {
+    small: number
+    big: number
+  }
   action?: Action['id']
 }
 

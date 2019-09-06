@@ -1,6 +1,11 @@
-import { UserWithOutPassword, Group, User, Action } from 'dataStore'
+import { UserWithOutPassword, Group, User } from 'dataStore'
 import { create, get, all, update, del } from './dataStore'
-import { StoreTypes, isGroup } from '../types/dataStore'
+import {
+  StoreTypes,
+  isGroup,
+  ActionRunning,
+  NewActionEnum,
+} from '../types/dataStore'
 import { clone } from '../utils'
 
 export type Order = { [order: string]: string }
@@ -24,13 +29,13 @@ const checkIfAlreadyInAGroup = async (id: UserWithOutPassword['id']) => {
 export const newGroup = async ({
   name = '',
   startSum = 1000,
-  blind = 5,
+  smallBlind = 2,
+  bigBlind = 5,
   userID,
-}: WithOptional<
-  Pick<Group, 'name' | 'startSum' | 'blind'>,
-  'name' | 'startSum' | 'blind'
-> & {
+}: WithOptional<Pick<Group, 'name' | 'startSum'>, 'name' | 'startSum'> & {
   userID: UserWithOutPassword['id']
+  smallBlind?: Group['blind']['small']
+  bigBlind?: Group['blind']['big']
 }): Promise<MaybeNull<Group>> => {
   if (await checkIfAlreadyInAGroup(userID)) {
     return null
@@ -41,7 +46,10 @@ export const newGroup = async ({
       id,
       name,
       startSum,
-      blind,
+      blind: {
+        small: smallBlind,
+        big: bigBlind,
+      },
       owner: userID,
       users: [
         {
@@ -74,7 +82,7 @@ const updateWrapper = async (
 
   await update(id, modified, StoreTypes.Group)
 
-  return modified
+  return await modified
 }
 
 export const joinGroup = async ({
@@ -89,7 +97,7 @@ export const joinGroup = async ({
 
   return await updateWrapper(
     id,
-    res => res.turn != null || res.users.some(user => user.id === userID),
+    res => res.action != null || res.users.some(user => user.id === userID),
     async res => {
       res.users.push({
         id: userID,
@@ -132,7 +140,7 @@ export const leaveGroup = async ({
 > => {
   return await updateWrapper(
     id,
-    res => res.turn != null || res.users.every(user => user.id !== userID),
+    res => res.action != null || res.users.every(user => user.id !== userID),
     async res => {
       const currentIndex = res.users.findIndex(item => item.id == userID)
 
@@ -157,7 +165,7 @@ export const updateOrder = async ({
 }) => {
   return await updateWrapper(
     id,
-    res => res.turn != null || res.owner !== userID,
+    res => res.action != null || res.owner !== userID,
     async res => {
       const max = res.users.length - 1
       for (const [key, id] of Object.entries(order)) {
@@ -186,18 +194,21 @@ export const updateGroup = async ({
   id,
   name,
   startSum,
-  blind,
+  smallBlind,
+  bigBlind,
   owner,
   userID,
 }: Pick<Group, 'id'> & {
   name: MaybeUndefined<Group['name']>
   startSum: MaybeUndefined<Group['startSum']>
-  blind: MaybeUndefined<Group['blind']>
+  smallBlind: MaybeUndefined<Group['blind']['small']>
+  bigBlind: MaybeUndefined<Group['blind']['big']>
   owner: MaybeUndefined<Group['owner']>
   userID: UserWithOutPassword['id']
 }): Promise<MaybeNull<Group>> => {
   const update = {
-    blind: blind != null,
+    bigBlind: bigBlind != null,
+    smallBlind: smallBlind != null,
     name: name != null,
     owner: owner != null,
     startSum: startSum != null,
@@ -206,41 +217,57 @@ export const updateGroup = async ({
   return await updateWrapper(
     id,
     res => {
-      if (res.turn != null || res.owner !== userID) {
+      if (res.action != null || res.owner !== userID) {
         return true
       }
-
-      if (blind && res.blind === blind) {
-        update.blind = false
+      if (bigBlind && res.blind.big === bigBlind) {
+        update.bigBlind = false
       }
-
+      if (smallBlind && res.blind.small === smallBlind) {
+        update.smallBlind = false
+      }
       if (name && res.name === name) {
         update.name = false
       }
-
       if (owner && res.users.find(({ id }) => id === owner) == null) {
         update.owner = false
       }
-
       if (startSum && res.startSum === startSum) {
         update.startSum = false
+      }
+
+      if (update.bigBlind && bigBlind) {
+        const small = smallBlind ? smallBlind : res.blind.small
+        update.bigBlind = bigBlind > small
+      }
+
+      if (update.smallBlind && smallBlind) {
+        const big = bigBlind ? bigBlind : res.blind.big
+        update.smallBlind = smallBlind < big
+      }
+
+      if (update.bigBlind && update.smallBlind && bigBlind && smallBlind) {
+        if (bigBlind <= smallBlind) {
+          update.bigBlind = false
+          update.smallBlind = false
+        }
       }
 
       return Object.values(update).every(value => value === false)
     },
     async res => {
-      if (update.blind && blind) {
-        res.blind = blind
+      if (update.bigBlind && bigBlind) {
+        res.blind.big = bigBlind
       }
-
+      if (update.smallBlind && smallBlind) {
+        res.blind.small = smallBlind
+      }
       if (update.name && name) {
         res.name = name
       }
-
       if (update.owner && owner) {
         res.owner = owner
       }
-
       if (update.startSum && startSum) {
         res.startSum = startSum
 
@@ -248,7 +275,6 @@ export const updateGroup = async ({
           user.sum = startSum
         })
       }
-
       return res
     }
   )
@@ -262,12 +288,29 @@ export const startGame = async ({
 }): Promise<MaybeNull<Group>> => {
   return await updateWrapper(
     id,
-    res => res.turn != null || res.owner !== userID || res.users.length < 2,
+    res => res.owner !== userID || res.users.length < 2,
     async res => {
-      const action = await create<Action>(StoreTypes.Action, id => ({ id }))
+      const [{ id: playerOne }, { id: playerTwo }] = res.users
+      const action = await create<ActionRunning>(StoreTypes.Action, id => ({
+        id,
+        grupID: res.id,
+        queued: {},
+        button: playerOne,
+        big: playerTwo,
+        turn: [
+          { [playerOne]: { type: NewActionEnum.Small } },
+          { [playerTwo]: { type: NewActionEnum.Big } },
+        ],
+        folded: [],
+        pot: res.blind.small + res.blind.big,
+        round: 1,
+      }))
+
+      if (action == null) {
+        throw new Error('atomic update failed')
+      }
 
       res.action = action.id
-
       return res
     }
   )

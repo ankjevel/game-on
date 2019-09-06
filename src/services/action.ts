@@ -1,10 +1,11 @@
 import { UserWithOutPassword, Action, Group, User } from 'dataStore'
 import {
   StoreTypes as Type,
+  ActionRunning,
   NewAction,
-  isAction,
   checkId,
   isNewAction,
+  isActionRunning,
 } from '../types/dataStore'
 import { getWrapper as getFromStore } from './dataStore'
 import { pushSession } from './session'
@@ -14,27 +15,21 @@ import mainLoop from './messageListener'
 const CHANNEL = 'message'
 
 type Message = {
-  action: Action
-  groupID: Group['id']
-  newAction: {
-    [userID: string]: NewAction
-  }
+  action: ActionRunning
+  userID: User['id']
+  newAction: NewAction
 }
 
 const isMessage = (input: Message | any): input is Message => {
   return (
     input != null &&
-    hasProp(input, 'action') &&
-    isAction((input as any).action) &&
-    hasProp(input, 'groupID') &&
-    checkId((input as any).groupID, Type.Group) &&
-    hasProp(input, 'newAction') &&
-    checkId(Object.keys((input as any).newAction).pop() || '', Type.User) &&
-    isNewAction(Object.values((input as any).newAction).pop())
+    (hasProp(input, 'action') && isActionRunning((input as any).action)) &&
+    (hasProp(input, 'userID') && checkId((input as any).userID, Type.User)) &&
+    (hasProp(input, 'newAction') && isNewAction((input as any).newAction))
   )
 }
 
-export const push = async (message: Message | any) => {
+export const push = async (message: Message) => {
   if (!isMessage(message)) {
     return
   }
@@ -53,7 +48,7 @@ export const newAction = async ({
   userID: UserWithOutPassword['id']
   newAction: NewAction
 }) => {
-  const action = await getFromStore<Action>({ id, type: Type.Action })
+  const action = await getFromStore<ActionRunning>({ id, type: Type.Action })
   const group = await getFromStore<Group>({ id: groupID, type: Type.Group })
   if (
     action == null ||
@@ -63,13 +58,9 @@ export const newAction = async ({
     return
   }
 
-  await push({
-    action,
-    groupID: group.id,
-    newAction: {
-      [userID]: newAction,
-    },
-  })
+  console.log('this', { action, userID, newAction })
+
+  await push({ action, userID, newAction })
 }
 
 mainLoop(CHANNEL, async message => {

@@ -105,7 +105,8 @@
           "no-undef": "off",
           "no-unused-vars": "off",
           "react/prop-types": "off",
-          "space-before-function-paren": "off"
+          "space-before-function-paren": "off",
+          "require-atomic-updates": "off"
         }
       }
     ],

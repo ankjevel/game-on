@@ -7,9 +7,11 @@ import redis from '../adapters/redis'
 
 import {
   Action,
+  ActionRunning,
   GetResult,
   Group,
   isAction,
+  isActionRunning,
   isGroup,
   isUser,
   StoreTypes,
@@ -165,6 +167,9 @@ export const getWrapper = async <T extends Types>({
   switch (type) {
     case StoreTypes.Action:
       check = isAction
+      break
+    case StoreTypes.ActionRunning:
+      check = isActionRunning
       break
     case StoreTypes.Group:
       check = isGroup

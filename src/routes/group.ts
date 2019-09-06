@@ -3,6 +3,17 @@ import { isNumber, hasProp, nullOrEmpty, parse } from '../utils'
 import * as groupService from '../services/group'
 import { UserWithOutPassword, Group } from 'dataStore'
 
+const returnNumber = (input: any, prop: string): MaybeUndefined<number> => {
+  return hasProp<any>(input, prop) &&
+    isNumber((input as any)[prop]) &&
+    isNumber(parseInt((input as any)[prop]))
+    ? Math.max(
+        0,
+        Math.min(parseInt((input as any)[prop]), Number.MAX_SAFE_INTEGER)
+      )
+    : undefined
+}
+
 const input = {
   name(input: Group | unknown): MaybeUndefined<Group['name']> {
     return input != null &&
@@ -14,14 +25,7 @@ const input = {
   },
 
   startSum(input: Group | unknown): MaybeUndefined<Group['startSum']> {
-    return hasProp<Group>(input, 'startSum') &&
-      isNumber(input.startSum) &&
-      isNumber(parseInt((input as any).startSum))
-      ? Math.max(
-          0,
-          Math.min(parseInt((input as any).startSum), Number.MAX_SAFE_INTEGER)
-        )
-      : undefined
+    return returnNumber(input, 'startSum') as MaybeUndefined<Group['startSum']>
   },
 
   owner(
@@ -54,15 +58,16 @@ const input = {
     return nullOrEmpty(param) || param.length > 255
   },
 
-  blind(input: Group | unknown): MaybeUndefined<Group['blind']> {
-    return hasProp<Group>(input, 'blind') &&
-      isNumber(input.blind) &&
-      isNumber(parseInt((input as any).blind))
-      ? Math.max(
-          0,
-          Math.min(parseInt((input as any).blind), Number.MAX_SAFE_INTEGER)
-        )
-      : undefined
+  smallBlind(input: { smallBlind: any }) {
+    return returnNumber(input, 'smallBlind') as MaybeUndefined<
+      Group['blind']['small']
+    >
+  },
+
+  bigBlind(input: { bigBlind: any }) {
+    return returnNumber(input, 'bigBlind') as MaybeUndefined<
+      Group['blind']['big']
+    >
   },
 }
 
@@ -76,6 +81,8 @@ export const register: Route = (app, auth) => {
       await groupService.newGroup({
         name: input.name(body),
         startSum: input.startSum(body),
+        smallBlind: input.smallBlind(body),
+        bigBlind: input.bigBlind(body),
         userID: user.id,
       })
     )
@@ -135,7 +142,8 @@ export const register: Route = (app, auth) => {
       owner: input.owner(body, user.id),
       name: input.name(body),
       startSum: input.startSum(body),
-      blind: input.blind(body),
+      smallBlind: input.smallBlind(body),
+      bigBlind: input.bigBlind(body),
       userID: user.id,
     })
 
