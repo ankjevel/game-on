@@ -119,6 +119,9 @@ put "/group/${group}/start" $header_1
 action_id=`last|jq .action|strip`
 echo $action_id
 
-post "/action/${action_id}/${group}" $header_1 '{"type":"rise","value":1337}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"raise","value":1337}'
 post "/action/${action_id}/${group}" $header_1 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"none"}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
 post "/action/${action_id}/${group}" $header_2 '{"type":"call"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"none"}'

@@ -217,7 +217,11 @@ export const updateGroup = async ({
   return await updateWrapper(
     id,
     res => {
-      if (res.action != null || res.owner !== userID) {
+      if (
+        res.action != null ||
+        res.owner !== userID ||
+        (startSum && (bigBlind || smallBlind))
+      ) {
         return true
       }
       if (bigBlind && res.blind.big === bigBlind) {
@@ -232,22 +236,29 @@ export const updateGroup = async ({
       if (owner && res.users.find(({ id }) => id === owner) == null) {
         update.owner = false
       }
-      if (startSum && res.startSum === startSum) {
+      if (
+        startSum &&
+        (res.startSum === startSum || startSum <= res.blind.big)
+      ) {
         update.startSum = false
       }
 
       if (update.bigBlind && bigBlind) {
         const small = smallBlind ? smallBlind : res.blind.small
-        update.bigBlind = bigBlind > small
+        update.bigBlind = bigBlind > small && bigBlind < res.startSum
       }
 
       if (update.smallBlind && smallBlind) {
         const big = bigBlind ? bigBlind : res.blind.big
-        update.smallBlind = smallBlind < big
+        update.smallBlind = smallBlind < big && smallBlind < res.startSum
       }
 
       if (update.bigBlind && update.smallBlind && bigBlind && smallBlind) {
         if (bigBlind <= smallBlind) {
+          update.bigBlind = false
+          update.smallBlind = false
+        }
+        if (bigBlind >= res.startSum || smallBlind >= res.startSum) {
           update.bigBlind = false
           update.smallBlind = false
         }
@@ -290,18 +301,29 @@ export const startGame = async ({
     id,
     res => res.owner !== userID || res.users.length < 2,
     async res => {
-      const [{ id: playerOne }, { id: playerTwo }] = res.users
+      const [playerOne, playerTwo] = res.users
+      const turn = {
+        [playerOne.id]: { bet: res.blind.small, status: NewActionEnum.None },
+        [playerTwo.id]: { bet: res.blind.big, status: NewActionEnum.None },
+      }
+
+      res.users.slice(2, -1).forEach(user => {
+        turn[user.id] = {
+          bet: 0,
+          status: NewActionEnum.None,
+        }
+      })
+
+      playerOne.sum -= res.blind.small
+      playerTwo.sum -= res.blind.big
+
       const action = await create<ActionRunning>(StoreTypes.Action, id => ({
         id,
         groupID: res.id,
         queued: {},
-        button: playerOne,
-        big: playerTwo,
-        turn: [
-          { [playerOne]: { type: NewActionEnum.Small } },
-          { [playerTwo]: { type: NewActionEnum.Big } },
-        ],
-        folded: [],
+        button: playerOne.id,
+        big: playerTwo.id,
+        turn,
         pot: res.blind.small + res.blind.big,
         round: 0,
       }))

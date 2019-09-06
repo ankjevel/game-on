@@ -2,24 +2,19 @@ export interface Action {
   id: string
 }
 
-export interface ITurn<T> {
-  [userID: string]: T
+export interface KeyValue<T> {
+  [key: string]: T
 }
 
-export interface IActionRunning<T> extends Action {
+export interface IActionRunning<T, Y> extends Action {
   round: 0 | 1 | 2 | 3
   groupID: Group['id']
-  queued: ITurn<T>
-  turn: ITurn<T>[]
+  queued: KeyValue<T>
+  turn: KeyValue<Y>
   button: User['id']
   big: User['id']
   pot: number
-
-  folded: User['id'][]
-
   sittingOut?: User['id'][]
-  history?: ITurn<T>[]
-  bust?: User['id'][]
 }
 
 export interface User {

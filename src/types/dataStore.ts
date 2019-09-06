@@ -6,7 +6,7 @@ import {
   User,
   UserWithOutPassword,
   GetResult,
-  ITurn,
+  KeyValue,
 } from 'dataStore'
 
 export type Types = Action | Group | User
@@ -18,26 +18,54 @@ export enum StoreTypes {
   ActionRunning = 'action:running',
 }
 
-export type ActionRunning = IActionRunning<NewAction>
+export type ActionRunning = IActionRunning<NewAction, UserSummary>
 
 export enum NewActionEnum {
   None = 'none',
+  Check = 'check',
+  Call = 'call',
+  Raise = 'raise',
   AllIn = 'allIn',
+  Fold = 'fold',
+
   Back = 'back',
   Bank = 'bank',
-  Big = 'big',
-  Call = 'call',
-  Check = 'check',
   Join = 'join',
   Leave = 'leave',
-  Rise = 'rise',
   SittingOut = 'sittingOut',
-  Small = 'small',
 }
 
 export type NewAction = {
   type: NewActionEnum
   value?: number
+}
+
+export type UserSummary = {
+  bet: number
+  status: NewActionEnum
+}
+
+export const isUserSummary = (any: any): any is UserSummary => {
+  if (
+    any == null ||
+    !hasProp<any>(any, 'bet') ||
+    !isNumber(any.bet) ||
+    !hasProp<any>(any, 'status')
+  ) {
+    return false
+  }
+
+  switch (any.status) {
+    case NewActionEnum.None:
+    case NewActionEnum.Check:
+    case NewActionEnum.Call:
+    case NewActionEnum.Raise:
+    case NewActionEnum.AllIn:
+    case NewActionEnum.Fold:
+      return true
+    default:
+      return false
+  }
 }
 
 export const isNewActionType = (any: any): any is NewActionEnum =>
@@ -65,11 +93,10 @@ export const isNewAction = (
     case NewActionEnum.None:
     case NewActionEnum.AllIn:
     case NewActionEnum.Back:
-    case NewActionEnum.Big:
     case NewActionEnum.Call:
     case NewActionEnum.Check:
+    case NewActionEnum.Fold:
     case NewActionEnum.SittingOut:
-    case NewActionEnum.Small:
       return isNumber(any.value) === false
     default:
       return isNumber(any.value)
@@ -132,8 +159,8 @@ export const isAction = (any: Action | unknown): any is Action =>
   checkId(any.id, StoreTypes.Action)
 
 export const isTurn = (
-  any: ITurn<NewActionEnum> | unknown
-): any is ITurn<NewActionEnum> =>
+  any: KeyValue<NewActionEnum> | unknown
+): any is KeyValue<NewActionEnum> =>
   any != null &&
   Object.entries(any as any).every(
     ([key, value]) => checkId(key, StoreTypes.User) && isNewAction(value)
@@ -146,19 +173,13 @@ export const isActionRunning = (
   (hasProp<ActionRunning>(any, 'round') && isNumber(any.round)) &&
   (hasProp(any, 'groupID') && checkId(any.groupID, StoreTypes.Group)) &&
   (hasProp(any, 'queued') && isTurn(any.queued)) &&
-  (hasProp(any, 'turn') && any.turn.every(turn => isTurn(turn))) &&
+  (hasProp(any, 'turn') &&
+    Object.entries(any.turn).every(
+      ([key, value]) => checkId(key, StoreTypes.User) && isUserSummary(value)
+    )) &&
   (hasProp(any, 'button') && checkId(any.button, StoreTypes.User)) &&
   (hasProp(any, 'big') && checkId(any.big, StoreTypes.User)) &&
   (hasProp(any, 'pot') && isNumber(any.round)) &&
-  (hasProp(any, 'folded') &&
-    Array.isArray(any.folded) &&
-    any.folded.every(fold => checkId(fold, StoreTypes.User))) &&
   (Array.isArray(any.sittingOut)
     ? any.sittingOut.every(user => checkId(user, StoreTypes.User))
-    : true) &&
-  (Array.isArray(any.history)
-    ? any.history.every(turn => isTurn(turn))
-    : true) &&
-  (Array.isArray(any.bust)
-    ? any.bust.every(user => checkId(user, StoreTypes.User))
     : true)

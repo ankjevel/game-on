@@ -5,6 +5,7 @@ import {
   NewAction,
   checkId,
   isNewAction,
+  NewActionEnum as NAE,
 } from '../types/dataStore'
 import { getWrapper as getFromStore, update } from './dataStore'
 import { pushSession } from './session'
@@ -69,6 +70,115 @@ export const newAction = async ({
   await push({ actionID, userID, groupID, newAction })
 }
 
+const handleUpdate = async (
+  action: ActionRunning,
+  group: Group,
+  { newAction, userID }: Message
+) => {
+  const isBig = userID === action.big
+  const currentAnte = action.turn[action.big].bet
+
+  const userAction =
+    newAction.type === NAE.None && action.queued[userID]
+      ? action.queued[userID]
+      : newAction
+
+  const userIndex = group.users.findIndex(({ id }) => id === userID)
+  const user = group.users[userIndex] as Group['users'][0]
+  const player = action.turn[userID]
+  const playerAnte = player.bet
+
+  const raisePot = (raise = 0) => {
+    const sum = currentAnte - playerAnte + raise
+    if (user.sum < sum) {
+      console.log('cant update, not enough funds')
+      return false
+    }
+
+    user.sum -= sum
+    player.bet += sum
+    action.pot += sum
+
+    return true
+  }
+
+  switch (userAction.type) {
+    case NAE.None: {
+      console.log('no stored actions')
+      return
+    }
+    case NAE.Call: {
+      if (!raisePot()) {
+        return
+      }
+
+      player.status = NAE.Call
+      break
+    }
+    case NAE.Raise: {
+      if (userAction.value == null) {
+        console.log('nothing raised')
+        return
+      }
+
+      if (!raisePot(userAction.value)) {
+        return
+      }
+
+      player.status = NAE.Raise
+      break
+    }
+    case NAE.AllIn:
+    case NAE.Fold:
+      break
+    case NAE.Check: {
+      if (!isBig) {
+        console.log('cant check, not "leader"')
+        return
+      }
+
+      player.status = NAE.Check
+      break
+    }
+    // case NAE.Back:
+    // case NAE.Bank:
+    // case NAE.Join:
+    // case NAE.Leave:
+    // case NAE.SittingOut:
+  }
+
+  let nextUserIndex = userIndex
+  let i = 0
+  const max = group.users.length
+  let run = true
+  do {
+    if (++i >= max) {
+      console.log('cant find next player')
+      run = false
+      return
+    }
+
+    nextUserIndex = (nextUserIndex + 1) % max
+
+    const user = group.users[nextUserIndex]
+    if (user == null || user.id == null || action.turn[user.id] == null) {
+      continue
+    }
+
+    if (action.turn[user.id].status !== NAE.Fold) {
+      run = false
+      break
+    }
+  } while (run)
+
+  action.button = group.users[nextUserIndex].id
+
+  await update(action.id, action, Type.ActionRunning)
+  await update(group.id, group, Type.Group)
+
+  console.log(action, group)
+}
+
 mainLoop(CHANNEL, async maybeMessage => {
   const message = parse<Message>(maybeMessage)
   if (!isMessage(message)) {
@@ -107,5 +217,5 @@ mainLoop(CHANNEL, async maybeMessage => {
     return
   }
 
-  console.log(action, group, message.newAction)
+  return handleUpdate(action, group, message)
 })
