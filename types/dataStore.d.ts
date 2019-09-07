@@ -21,6 +21,7 @@ export interface IActionRunning<T, Y> extends Action {
   small: User['id']
   pot: number
   sittingOut?: User['id'][]
+  sidePot?: { id: User['id']; sum: number }[]
 }
 
 export interface User {

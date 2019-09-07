@@ -135,12 +135,6 @@ new_order="$(echo $(cat <<-EOF
 EOF
 ) | sed 's/ //g')"
 
-u_1=$header_3 # small, since user_2 is dealer
-u_2=$header_4 # big, since prev is small
-u_3=$header_1
-u_4=$header_2
-
-echo $new_order
 print "change order ($new_order)"
 patch "/group/${group}/order" $header_1 $new_order
 last
@@ -164,32 +158,32 @@ echo $action_id
 ##
 print "hand #1"
 echo "betting round"
-post "/action/${action_id}/${group}" $u_4 '{"type":"raise","value":40}' # stored
-post "/action/${action_id}/${group}" $u_1 '{"type":"bet"}' # small | button
-post "/action/${action_id}/${group}" $u_2 '{"type":"bet"}'
-post "/action/${action_id}/${group}" $u_3 '{"type":"bet"}'
-post "/action/${action_id}/${group}" $u_4 '{"type":"call"}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"raise","value":40}' # stored
+post "/action/${action_id}/${group}" $header_3 '{"type":"bet"}' # small | button
+post "/action/${action_id}/${group}" $header_4 '{"type":"bet"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"bet"}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"call"}'
 echo "end betting round (all stay, pot at 20)"
 
 echo "round 1"
-post "/action/${action_id}/${group}" $u_1 '{"type":"check"}' # button
-post "/action/${action_id}/${group}" $u_2 '{"type":"check"}'
-post "/action/${action_id}/${group}" $u_3 '{"type":"check"}'
-post "/action/${action_id}/${group}" $u_4 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"check"}' # button
+post "/action/${action_id}/${group}" $header_4 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
 echo "end round 1 (all stay, pot stays the same)"
 
 echo "round 2"
-post "/action/${action_id}/${group}" $u_1 '{"type":"check"}'
-post "/action/${action_id}/${group}" $u_2 '{"type":"raise","value":10}' # new button
-post "/action/${action_id}/${group}" $u_3 '{"type":"fold"}'
-post "/action/${action_id}/${group}" $u_4 '{"type":"call"}'
-post "/action/${action_id}/${group}" $u_1 '{"type":"call"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_4 '{"type":"raise","value":10}' # new button
+post "/action/${action_id}/${group}" $header_1 '{"type":"fold"}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"call"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"call"}'
 echo "end round 2 (user 1 should fold, pot at 50)"
 
 echo "round 3"
-post "/action/${action_id}/${group}" $u_2 '{"type":"check"}' # button
-post "/action/${action_id}/${group}" $u_4 '{"type":"check"}'
-post "/action/${action_id}/${group}" $u_1 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_4 '{"type":"check"}' # button
+post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"check"}'
 echo "end round 3 (3 users remaing, pot unchanged)"
 
 echo "showdown draw"
@@ -200,18 +194,39 @@ echo "end game (pot divided in 3 (16 each, 2 stored to next))"
 ##
 print "hand #2"
 echo "betting round"
-post "/action/${action_id}/${group}" $u_2 '{"type":"raise","value":39}' # small | button
-post "/action/${action_id}/${group}" $u_3 '{"type":"bet"}'
-post "/action/${action_id}/${group}" $u_4 '{"type":"fold"}'
-post "/action/${action_id}/${group}" $u_1 '{"type":"fold"}'
-post "/action/${action_id}/${group}" $u_2 '{"type":"fold"}' # user 4 forfeits (was small (edge case))
+post "/action/${action_id}/${group}" $header_4 '{"type":"raise","value":39}' # small | button
+post "/action/${action_id}/${group}" $header_1 '{"type":"bet"}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"fold"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"fold"}'
+post "/action/${action_id}/${group}" $header_4 '{"type":"fold"}' # user 4 forfeits (was small (edge case))
 echo "end betting round (all folded, user 1 gets small + stored (4))"
 
 ##
 ##
 print "hand #3"
 echo "betting round"
-post "/action/${action_id}/${group}" $u_3 '{"type":"raise","value":1}' # small | button
-post "/action/${action_id}/${group}" $u_4 '{"type":"call"}'
-post "/action/${action_id}/${group}" $u_1 '{"type":"call"}'
-post "/action/${action_id}/${group}" $u_2 '{"type":"call"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"raise","value":1}' # small | button
+post "/action/${action_id}/${group}" $header_2 '{"type":"call"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"call"}'
+post "/action/${action_id}/${group}" $header_4 '{"type":"call"}'
+echo "end betting round (all stay, pot at 18)"
+
+echo "round 1"
+post "/action/${action_id}/${group}" $header_1 '{"type":"check"}' # small | button
+post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_4 '{"type":"allIn"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"raise","value":50}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"fold"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"allIn"}'
+echo "end round 1, two went all in, 1 folded and one continued"
+
+winners="$(echo $(cat <<-EOF
+{
+ "type": "winner",
+ "winners": ["${user_1}","${user_3}","${user_4}"]
+}
+EOF
+) | sed 's/ //g')"
+
+post "/action/${action_id}/${group}" $header_1 $winners

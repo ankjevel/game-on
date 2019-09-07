@@ -115,7 +115,11 @@ const getPlayer = ({
     }
 
     const { status } = action.turn[user.id]
-    if (check == null ? status !== NAE.Fold : check(status)) {
+    if (
+      check == null
+        ? status !== NAE.Fold && status !== NAE.AllIn
+        : check(status)
+    ) {
       run = false
       break // found user
     }
@@ -327,6 +331,26 @@ const handleUpdate = async (
       break
     }
 
+    case NAE.AllIn: {
+      const bet = player.bet + user.sum
+
+      player.bet = bet
+      action.pot += user.sum
+      player.status = NAE.AllIn
+      user.sum = 0
+
+      if (action.sidePot == null) {
+        action.sidePot = []
+      }
+
+      action.sidePot.push({
+        id: userID,
+        sum: bet,
+      })
+
+      break
+    }
+
     default:
       console.log(action.id, `unhandled event: ${userAction.type}`)
       return
@@ -347,12 +371,16 @@ const handleUpdate = async (
       action.button = action.big
       console.log(action.id, 'should end betting round')
     }
-  } else if (nextUserID === currentBig) {
+  } else if (
+    userAction.type !== NAE.Raise &&
+    (userAction.type !== NAE.AllIn && action.big !== userID) &&
+    nextUserID === currentBig
+  ) {
     ++action.round
     if (action.round === 4) {
-      console.log(action.id, 'showdown!')
+      console.log(action.id, 'showdown!\n\n')
     } else {
-      console.log(action.id, 'new round')
+      console.log(action.id, 'new round\n\n')
     }
   }
 
@@ -373,35 +401,29 @@ const handleUpdate = async (
     action.big = userID
   }
 
-  if (
-    newAction.type === NAE.Fold &&
-    Object.values(action.turn).filter(x => x.status !== NAE.Fold).length <= 1
+  maybeEnd: if (
+    Object.values(action.turn).filter(
+      x => x.status !== NAE.Fold && x.status !== NAE.AllIn
+    ).length <= 1
   ) {
+    if (
+      Object.values(action.turn).filter(x => x.status === NAE.AllIn).length >= 1
+    ) {
+      action.round = 4
+      console.log(action.id, 'all folded; contains all-in')
+      break maybeEnd
+    }
+
     console.log(action.id, `all folded; winner ${action.big}`)
     await handleEndRound(action, group, {
       type: NAE.Winner,
-      winner: action.big,
+      winners: [action.big],
     })
     debug.endAction({ action, group })
     return
   }
 
   debug.endAction({ action, group })
-
-  const missingFundsForNextRound = group.users.filter(
-    user => user.sum <= group.blind.big
-  )
-  if (missingFundsForNextRound.length) {
-    console.log(
-      action.id,
-      'these users will be removed',
-      missingFundsForNextRound.map(({ id }) => id)
-    )
-
-    missingFundsForNextRound.forEach(user => {
-      console.log(user)
-    })
-  }
 
   await update(action.id, action, Type.ActionRunning)
   await update(group.id, group, Type.Group)
@@ -479,11 +501,23 @@ const resetAction = ({
   action.pot = pot + group.blind.small + group.blind.big
   action.round = 0
   action.turn = turn
-  action.sittingOut = undefined
+  action.sidePot = undefined
   action.button = newSmall.id
   action.queued = {}
   action.big = newBig.id
   action.small = newSmall.id
+}
+
+const handleEndRoundWithSidePot = async (
+  action: ActionRunning,
+  group: Group,
+  newAction: Message['newAction']
+) => {
+  console.log({
+    action,
+    group,
+    newAction,
+  })
 }
 
 const handleEndRound = async (
@@ -491,6 +525,10 @@ const handleEndRound = async (
   group: Group,
   newAction: Message['newAction']
 ) => {
+  if (action.sidePot != null) {
+    return handleEndRoundWithSidePot(action, group, newAction)
+  }
+
   let pot = 0
   switch (newAction.type) {
     case NAE.Draw: {

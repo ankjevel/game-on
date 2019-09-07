@@ -1,7 +1,13 @@
 import Route from 'Route'
 import { nullOrEmpty, hasProp, isNumber, toEnum } from '../utils'
 import * as actionService from '../services/action'
-import { NewAction, NewActionEnum, isNewAction } from '../types/dataStore'
+import {
+  NewAction,
+  NewActionEnum,
+  isNewAction,
+  checkId,
+  StoreTypes,
+} from '../types/dataStore'
 
 const input = {
   type(input: NewAction): MaybeUndefined<NewAction['type']> {
@@ -13,6 +19,14 @@ const input = {
   value(input: NewAction): MaybeUndefined<NewAction['value']> {
     return hasProp(input, 'value') && isNumber(input.value)
       ? input.value
+      : undefined
+  },
+
+  winners(input: NewAction): MaybeUndefined<NewAction['winners']> {
+    return hasProp(input, 'winners') &&
+      Array.isArray(input.winners) &&
+      input.winners.every(winner => checkId(winner, StoreTypes.User))
+      ? input.winners
       : undefined
   },
 }
@@ -34,6 +48,7 @@ export const register: Route = (app, auth) => {
       const action = {
         type: input.type(body),
         value: input.value(body),
+        winners: input.winners(body),
       }
 
       if (!isNewAction(action, true)) {
