@@ -37,6 +37,7 @@ export const register: Route = (app, auth) => {
       }
 
       if (!isNewAction(action, true)) {
+        console.log('is not new action', action)
         return res.sendStatus(400)
       }
 

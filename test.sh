@@ -90,6 +90,8 @@ print "change owner (was ${owner})"
 patch "/group/${group}" $header_1 "{\"owner\":\"${user_2}\"}"
 last|jq .owner|strip
 
+owner=$header_2
+
 print "revert owner"
 patch "/group/${group}" $header_2 "{\"owner\":\"${user_1}\"}"
 last|jq .owner|strip
@@ -189,5 +191,5 @@ post "/action/${action_id}/${group}" $u_4 '{"type":"check"}'
 echo "end round 3 (3 users remaing, pot unchanged)"
 
 echo "showdown draw"
-post "/action/${action_id}/${group}" $u_4 '{"type":"draw"}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"draw"}'
 echo "end game (3 users remaing, pot divided at 3)"

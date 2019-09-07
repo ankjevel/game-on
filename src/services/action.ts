@@ -84,7 +84,7 @@ type QueryNext = {
   nextIndex: (current: number) => number
 }
 
-const nextPlayer = ({ start, group, action, userID, nextIndex }: QueryNext) => {
+const getPlayer = ({ start, group, action, userID, nextIndex }: QueryNext) => {
   const max = group.users.length
   let i = 0
   let run = true
@@ -235,7 +235,7 @@ const handleUpdate = async (
 
     case NAE.Check: {
       if (!isBig) {
-        const previousUserIndex = nextPlayer({
+        const previousUserIndex = getPlayer({
           start: userIndex,
           userID,
           group,
@@ -286,7 +286,7 @@ const handleUpdate = async (
 
   let nextUserID: MaybeUndefined<User['id']>
   if (playersLeft(action) > 1) {
-    const nextUserIndex = nextPlayer({
+    const nextUserIndex = getPlayer({
       start: userIndex,
       userID,
       group,
@@ -307,8 +307,8 @@ const handleUpdate = async (
     ) {
       roundEnded = true
     } else {
-      action.button = action.big
-      console.log(action.id, `new button: ${action.big} [was ${action.button}]`)
+      action.button = nextUserID
+      console.log(action.id, `new button: ${nextUserID} [was ${action.button}]`)
     }
   } else {
     const unFolded = Object.entries(action.turn).find(
