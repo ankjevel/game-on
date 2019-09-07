@@ -160,10 +160,9 @@ put "/group/${group}/start" $header_1
 action_id=`last|jq .action|strip`
 echo $action_id
 
-print "actions"
+print "hand #1"
 echo "betting round"
 post "/action/${action_id}/${group}" $u_4 '{"type":"raise","value":1337}' # stored
-# post "/action/${action_id}/${group}" $u_1 '{"type":"fold"}' # button
 post "/action/${action_id}/${group}" $u_1 '{"type":"bet"}' # button
 post "/action/${action_id}/${group}" $u_2 '{"type":"bet"}'
 post "/action/${action_id}/${group}" $u_3 '{"type":"bet"}'
@@ -194,3 +193,17 @@ echo "end round 3 (3 users remaing, pot unchanged)"
 echo "showdown draw"
 post "/action/${action_id}/${group}" $header_1 '{"type":"draw"}'
 echo "end game (3 users remaing, pot divided at 3)"
+
+print "hand #1"
+echo "betting round"
+post "/action/${action_id}/${group}" $u_2 '{"type":"raise","value":1333}' # button
+post "/action/${action_id}/${group}" $u_3 '{"type":"fold"}'
+post "/action/${action_id}/${group}" $u_4 '{"type":"fold"}'
+post "/action/${action_id}/${group}" $u_1 '{"type":"fold"}'
+
+print "hand #2"
+echo "betting round"
+post "/action/${action_id}/${group}" $u_3 '{"type":"bet"}' # button
+post "/action/${action_id}/${group}" $u_4 '{"type":"bet"}'
+post "/action/${action_id}/${group}" $u_1 '{"type":"bet"}'
+post "/action/${action_id}/${group}" $u_2 '{"type":"bet"}'

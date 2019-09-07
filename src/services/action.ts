@@ -344,6 +344,19 @@ const handleUpdate = async (
     action.big = userID
   }
 
+  if (
+    newAction.type === NAE.Fold &&
+    Object.values(action.turn).filter(x => x.status !== NAE.Fold).length <= 1
+  ) {
+    console.log(action.id, `all folded; winner ${action.big}`)
+    await handleEndRound(action, group, {
+      type: NAE.Winner,
+      winner: action.big,
+    })
+    debug.endAction({ action, group })
+    return
+  }
+
   debug.endAction({ action, group })
 
   await update(action.id, action, Type.ActionRunning)
@@ -355,6 +368,22 @@ type ActionGroup = {
   group: Group
 }
 
+const findNext = (group: Group, startIndex: number, sum: number, tries = 0) => {
+  const max = group.users.length
+
+  if (tries > max) {
+    return -1
+  }
+
+  const next = (startIndex + 1) % max
+
+  if (group.users[next].sum < sum) {
+    return findNext(group, next, sum, ++tries)
+  }
+
+  return next
+}
+
 const resetAction = ({
   action,
   group,
@@ -362,18 +391,31 @@ const resetAction = ({
 }: ActionGroup & {
   pot?: ActionRunning['pot']
 }) => {
-  const newSmall = action.big
-  const indexOfSmall = group.users.findIndex(user => user.id === newSmall)
-  const indexOfBig = (indexOfSmall + 1) % group.users.length
-  const newBig = group.users[indexOfBig].id
+  const indexOfOldSmall = group.users.findIndex(
+    user => user.id === action.small
+  )
+
+  const indexOfSmall = findNext(group, indexOfOldSmall, group.blind.small)
+  const indexOfBig = findNext(group, indexOfSmall, group.blind.big)
+
+  if (indexOfBig === -1 || indexOfSmall === -1) {
+    console.log(
+      action.id,
+      `cant find next big|small [${indexOfBig},${indexOfSmall}]`
+    )
+    return
+  }
+
+  const newSmall = group.users[indexOfSmall]
+  const newBig = group.users[indexOfBig]
 
   const turn = {
-    [newSmall]: { bet: group.blind.small, status: NAE.None },
-    [newBig]: { bet: group.blind.big, status: NAE.None },
+    [newSmall.id]: { bet: group.blind.small, status: NAE.None },
+    [newBig.id]: { bet: group.blind.big, status: NAE.None },
   }
 
   group.users
-    .filter(({ id }) => id !== newSmall && id !== newBig)
+    .filter(({ id }) => id !== newSmall.id && id !== newBig.id)
     .forEach(user => {
       turn[user.id] = {
         bet: 0,
@@ -381,45 +423,59 @@ const resetAction = ({
       }
     })
 
+  group.users[indexOfSmall].sum -= group.blind.small
+  group.users[indexOfBig].sum -= group.blind.big
+
   action.pot = pot + group.blind.small + group.blind.big
   action.round = 0
   action.turn = turn
   action.sittingOut = undefined
-  action.button = newSmall
+  action.button = newSmall.id
   action.queued = {}
-  action.big = newBig
-  action.small = newSmall
+  action.big = newBig.id
+  action.small = newSmall.id
 }
 
 const handleEndRound = async (
   action: ActionRunning,
   group: Group,
-  { newAction, userID }: Message
+  newAction: Message['newAction']
 ) => {
-  debug.action({ action, group, newAction, userID })
-
   let pot = 0
-  if (newAction.type === NAE.Draw) {
-    const ids = Object.entries(action.turn)
-      .filter(([, value]) => value.status !== NAE.Fold)
-      .map(([id]) => id)
+  switch (newAction.type) {
+    case NAE.Draw: {
+      const ids = Object.entries(action.turn)
+        .filter(([, value]) => value.status !== NAE.Fold)
+        .map(([id]) => id)
 
-    const share = Math.floor(action.pot / ids.length)
+      const share = Math.floor(action.pot / ids.length)
 
-    ids.forEach(id => {
-      const user = group.users.find(user => user.id === id) || { sum: 0 }
-      user.sum += share
-    })
+      ids.forEach(id => {
+        const user = group.users.find(user => user.id === id) || { sum: 0 }
+        user.sum += share
+      })
 
-    pot = action.pot - share * ids.length
+      pot = action.pot - share * ids.length
+      break
+    }
+
+    case NAE.Winner: {
+      const user = group.users.find(user => user.id === action.big) || {
+        sum: 0,
+      }
+      user.sum += action.pot
+      break
+    }
+
+    default:
+      console.log(action.id, 'unhandled event', newAction)
+      return
   }
 
   resetAction({ action, pot, group })
 
   await update(group.id, group, Type.Group)
   await update(action.id, action, Type.ActionRunning)
-
-  debug.endAction({ action, group })
 }
 
 mainLoop(CHANNEL, async maybeMessage => {
@@ -460,7 +516,7 @@ mainLoop(CHANNEL, async maybeMessage => {
       (message.newAction.type === NewActionEnum.Draw ||
         message.newAction.type === NewActionEnum.Winner)
     ) {
-      return handleEndRound(action, group, message)
+      return handleEndRound(action, group, message.newAction)
     }
 
     console.log(action.id, 'group is in showdown')
