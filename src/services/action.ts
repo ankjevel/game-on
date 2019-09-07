@@ -21,6 +21,7 @@ type QueryNext = {
   group: Group
   action: ActionRunning
   nextIndex: (current: number) => number
+  check?: (value: NAE) => Boolean
 }
 
 const CHANNEL = 'message'
@@ -80,7 +81,14 @@ export const newAction = async ({
 const applyAction = (userAction: NAE, action: ActionRunning) =>
   action.round === 0 ? NAE.Bet : userAction
 
-const getPlayer = ({ start, group, action, userID, nextIndex }: QueryNext) => {
+const getPlayer = ({
+  start,
+  group,
+  action,
+  userID,
+  nextIndex,
+  check,
+}: QueryNext) => {
   const max = group.users.length
   let i = 0
   let run = true
@@ -106,7 +114,8 @@ const getPlayer = ({ start, group, action, userID, nextIndex }: QueryNext) => {
       continue
     }
 
-    if (action.turn[user.id].status !== NAE.Fold) {
+    const { status } = action.turn[user.id]
+    if (check == null ? status !== NAE.Fold : check(status)) {
       run = false
       break // found user
     }
@@ -131,8 +140,8 @@ const raisePot = ({
   player: UserSummary
 }) => {
   const sum = currentAnte - playerAnte + raise
-  if (user.sum < sum) {
-    console.log(action.id, 'cant update, not enough funds')
+  if (user.sum <= sum) {
+    console.log(action.id, 'cant update, not enough funds (maybe all-in?)')
     return false
   }
 
@@ -259,6 +268,26 @@ const handleUpdate = async (
         console.log(action.id, 'why you do this? folding')
         action.big = group.users[nextUserIndex].id
       }
+
+      if (action.big === userID) {
+        const nextUserIndex = getPlayer({
+          start: userIndex,
+          userID,
+          group,
+          action,
+          nextIndex: current => (current + 1) % group.users.length,
+          check: type => [NAE.Bet, NAE.Call, NAE.Check].includes(type),
+        })
+
+        console.log(action.id, 'handle edgecase where BIG folds')
+        if (nextUserIndex == null || group.users[nextUserIndex] == null) {
+          console.log(action.id, 'cant find NEXT better, maybe dont fold?')
+          return
+        } else {
+          action.big = group.users[nextUserIndex].id
+        }
+      }
+
       player.status = NAE.Fold
       break
     }
@@ -359,6 +388,21 @@ const handleUpdate = async (
 
   debug.endAction({ action, group })
 
+  const missingFundsForNextRound = group.users.filter(
+    user => user.sum <= group.blind.big
+  )
+  if (missingFundsForNextRound.length) {
+    console.log(
+      action.id,
+      'these users will be removed',
+      missingFundsForNextRound.map(({ id }) => id)
+    )
+
+    missingFundsForNextRound.forEach(user => {
+      console.log(user)
+    })
+  }
+
   await update(action.id, action, Type.ActionRunning)
   await update(group.id, group, Type.Group)
 }
@@ -378,6 +422,7 @@ const findNext = (group: Group, startIndex: number, sum: number, tries = 0) => {
   const next = (startIndex + 1) % max
 
   if (group.users[next].sum < sum) {
+    console.log(`cant use user ${next}`)
     return findNext(group, next, sum, ++tries)
   }
 
@@ -415,7 +460,10 @@ const resetAction = ({
   }
 
   group.users
-    .filter(({ id }) => id !== newSmall.id && id !== newBig.id)
+    .filter(
+      ({ id, sum }) =>
+        id !== newSmall.id && id !== newBig.id && sum > group.blind.big
+    )
     .forEach(user => {
       turn[user.id] = {
         bet: 0,
@@ -425,6 +473,8 @@ const resetAction = ({
 
   group.users[indexOfSmall].sum -= group.blind.small
   group.users[indexOfBig].sum -= group.blind.big
+
+  group.users = group.users.filter(user => user.sum > group.blind.big)
 
   action.pot = pot + group.blind.small + group.blind.big
   action.round = 0
