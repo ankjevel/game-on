@@ -62,7 +62,10 @@ export const newAction = async ({
     action == null ||
     group == null ||
     group.users.some(user => user.id === userID) === false ||
-    group.action !== action.id
+    group.action !== action.id ||
+    (action.showdown &&
+      group.owner !== userID &&
+      (newAction.type !== NAE.Winner && newAction.type !== NAE.Draw))
   ) {
     return
   }
@@ -73,30 +76,43 @@ export const newAction = async ({
 const playersLeft = (action: ActionRunning) =>
   Object.values(action.turn).filter(u => u.status !== NAE.Fold).length
 
-const getNext = (start: number, group: Group, action: ActionRunning) => {
+type QueryNext = {
+  start: number
+  userID: User['id']
+  group: Group
+  action: ActionRunning
+  nextIndex: (current: number) => number
+}
+
+const nextPlayer = ({ start, group, action, userID, nextIndex }: QueryNext) => {
   const max = group.users.length
   let i = 0
   let run = true
-  let nextUserIndex = start
+  let nextUserIndex: MaybeNull<number> = start
 
   do {
     if (++i >= max) {
       console.log(action.id, 'cant find next player')
       run = false
-      nextUserIndex = -1
+      nextUserIndex = null
       break
     }
 
-    nextUserIndex = (nextUserIndex + 1) % max
+    nextUserIndex = nextIndex(nextUserIndex)
 
     const user = group.users[nextUserIndex]
-    if (user == null || user.id == null || action.turn[user.id] == null) {
+    if (
+      user == null ||
+      user.id == null ||
+      action.turn[user.id] == null ||
+      userID === user.id
+    ) {
       continue
     }
 
     if (action.turn[user.id].status !== NAE.Fold) {
       run = false
-      break
+      break // found user
     }
   } while (run)
 
@@ -116,7 +132,15 @@ const handleUpdate = async (
       : newAction
   const userIndex = group.users.findIndex(({ id }) => id === userID)
   const user = group.users[userIndex] as Group['users'][0]
+
+  console.log(action.turn)
   const player = action.turn[userID]
+
+  if (!player) {
+    console.log(action.id, `missing player ${userID}`)
+    return
+  }
+
   const playerAnte = player.bet
   let roundEnded = false
 
@@ -188,8 +212,29 @@ const handleUpdate = async (
 
     case NAE.Check: {
       if (!isBig) {
-        console.log(action.id, 'cant check, not "leader"')
-        return
+        const previousUserIndex = nextPlayer({
+          start: userIndex,
+          userID,
+          group,
+          action,
+          nextIndex: current => (current + 1) % group.users.length,
+        })
+
+        if (previousUserIndex == null) {
+          console.log(action.id, 'cant find previous user')
+          return
+        }
+
+        const prev = action.turn[group.users[previousUserIndex].id]
+        const curr = action.turn[userID]
+
+        if (prev.bet !== curr.bet) {
+          console.log(action.id, 'cant check, must raise (also not big)')
+          return
+        }
+
+        player.status = applyAction(NAE.Call)
+        break
       }
 
       player.status = applyAction(NAE.Check)
@@ -210,9 +255,23 @@ const handleUpdate = async (
 
   let nextUserID: MaybeUndefined<User['id']>
   if (playersLeft(action) > 1) {
-    const nextUserIndex = getNext(userIndex, group, action)
+    const nextUserIndex = nextPlayer({
+      start: userIndex,
+      userID,
+      group,
+      action,
+      nextIndex: current => {
+        --current
 
-    if (nextUserIndex === -1) {
+        if (current === -1) {
+          current = group.users.length - 1
+        }
+
+        return current
+      },
+    })
+
+    if (nextUserIndex == null) {
       console.log(action.id, 'missing next player')
       return
     }
@@ -252,12 +311,24 @@ const handleUpdate = async (
   }
 
   if (roundEnded) {
-    console.log({ nextUserID })
     console.log(action.id, 'round ended')
     console.log(action, group)
+    action.round += 1
   } else if (isBig && player.status === NAE.Raise) {
     action.round += 1
     console.log(action.id, 'new round')
+  }
+
+  if (
+    action.round === 0 &&
+    Object.values(action.turn).every(turn => turn.status !== NAE.None)
+  ) {
+    action.round += 1
+    console.log(action.id, 'should end betting round')
+  }
+
+  if (action.queued[userID]) {
+    delete action.queued[userID]
   }
 
   // console.log(action, group, player)

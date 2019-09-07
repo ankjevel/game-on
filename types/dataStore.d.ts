@@ -15,6 +15,7 @@ export interface IActionRunning<T, Y> extends Action {
   big: User['id']
   pot: number
   sittingOut?: User['id'][]
+  showdown: boolean
 }
 
 export interface User {

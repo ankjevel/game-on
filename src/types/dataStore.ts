@@ -41,6 +41,7 @@ export enum NewActionEnum {
 export type NewAction = {
   type: NewActionEnum
   value?: number
+  winner?: User['id']
 }
 
 export type UserSummary = {
@@ -80,6 +81,7 @@ export const isNewAction = (
     case NewActionEnum.None:
     case NewActionEnum.AllIn:
     case NewActionEnum.Back:
+    case NewActionEnum.Bet:
     case NewActionEnum.Call:
     case NewActionEnum.Check:
     case NewActionEnum.Fold:

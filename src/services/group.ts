@@ -301,31 +301,35 @@ export const startGame = async ({
     id,
     res => res.owner !== userID || res.users.length < 2,
     async res => {
-      const [playerOne, playerTwo] = res.users
+      const [buttonPlayer, smallBlind, bigBlind = buttonPlayer] = res.users
+
       const turn = {
-        [playerOne.id]: { bet: res.blind.small, status: NewActionEnum.None },
-        [playerTwo.id]: { bet: res.blind.big, status: NewActionEnum.None },
+        [smallBlind.id]: { bet: res.blind.small, status: NewActionEnum.None },
+        [bigBlind.id]: { bet: res.blind.big, status: NewActionEnum.None },
       }
 
-      res.users.slice(2).forEach(user => {
-        turn[user.id] = {
-          bet: 0,
-          status: NewActionEnum.None,
-        }
-      })
+      res.users
+        .filter(({ id }) => id !== bigBlind.id && id !== smallBlind.id)
+        .forEach(user => {
+          turn[user.id] = {
+            bet: 0,
+            status: NewActionEnum.None,
+          }
+        })
 
-      playerOne.sum -= res.blind.small
-      playerTwo.sum -= res.blind.big
+      smallBlind.sum -= res.blind.small
+      bigBlind.sum -= res.blind.big
 
       const action = await create<ActionRunning>(StoreTypes.Action, id => ({
         id,
         groupID: res.id,
         queued: {},
-        button: playerOne.id,
-        big: playerTwo.id,
+        button: buttonPlayer.id,
+        big: bigBlind.id,
         turn,
         pot: res.blind.small + res.blind.big,
         round: 0,
+        showdown: false,
       }))
 
       if (action == null) {

@@ -68,6 +68,11 @@ echo "create user 3"
 post "/user" "" '{"name":"user_3","email":"user_3@mail.com","p1":"xxxXx_333","p2":"xxxXx_333"}'
 header_3=`last`
 
+echo "create user 4"
+post "/user" "" '{"name":"user_4","email":"user_4@mail.com","p1":"xxxXx_444","p2":"xxxXx_444"}'
+header_4=`last`
+
+
 print "create group"
 post "/group" $header_1 '{"name":"dennis"}'
 group=`last|jq .id|strip`
@@ -111,6 +116,10 @@ print "join new group (user 3)"
 put "/group/${group}/join" $header_3
 last|jq -c '.users | map(.id)'
 
+print "join new group (user 4)"
+put "/group/${group}/join" $header_4
+last|jq -c '.users | map(.id)'
+
 print "change order"
 patch "/group/${group}/order" $header_1 "{\"0\":\"${user_2}\"}"
 last|jq -c '.users | map(.id)'
@@ -128,11 +137,35 @@ put "/group/${group}/start" $header_1
 action_id=`last|jq .action|strip`
 echo $action_id
 
-post "/action/${action_id}/${group}" $header_1 '{"type":"raise","value":1337}'
-post "/action/${action_id}/${group}" $header_1 '{"type":"check"}'
-post "/action/${action_id}/${group}" $header_2 '{"type":"none"}'
-post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
+print "actions"
+echo "betting round"
+post "/action/${action_id}/${group}" $header_1 '{"type":"raise","value":1337}' # not big
+post "/action/${action_id}/${group}" $header_2 '{"type":"none"}' # small-blind
+post "/action/${action_id}/${group}" $header_2 '{"type":"bet"}' # big
 post "/action/${action_id}/${group}" $header_2 '{"type":"call"}'
-post "/action/${action_id}/${group}" $header_1 '{"type":"none"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"none"}' # call check from previous
 post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
 post "/action/${action_id}/${group}" $header_3 '{"type":"bet"}'
+post "/action/${action_id}/${group}" $header_4 '{"type":"bet"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"call"}'
+
+echo "round 1"
+post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_4 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"check"}'
+
+echo "round 2"
+post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"raise","value":10}'  # new big
+post "/action/${action_id}/${group}" $header_4 '{"type":"fold"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"call"}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"call"}'
+
+echo "round 3"
+post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"check"}'
+
+echo "showdown draw"
+post "/action/${action_id}/${group}" $header_1 '{"type":"draw"}'
