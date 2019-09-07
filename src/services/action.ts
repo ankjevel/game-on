@@ -9,9 +9,10 @@ import {
   NewActionEnum,
   UserSummary,
 } from '../types/dataStore'
+import { Message } from '../types/action'
 import { getWrapper as getFromStore, update } from './dataStore'
 import { pushSession } from './session'
-import { parse, hasProp, clone, fillConsoleWindow } from '../utils'
+import { parse, hasProp, clone, debug } from '../utils'
 import mainLoop from './messageListener'
 
 type QueryNext = {
@@ -23,13 +24,6 @@ type QueryNext = {
 }
 
 const CHANNEL = 'message'
-
-type Message = {
-  actionID: ActionRunning['id']
-  groupID: Group['id']
-  userID: User['id']
-  newAction: NewAction
-}
 
 const isMessage = (input: Message | any): input is Message =>
   input != null &&
@@ -167,30 +161,12 @@ const handleUpdate = async (
   const currentStatus = clone(player.status)
   const playerAnte = player.bet
 
+  // debug.action({ action, group, newAction, userID })
+
   if (!player) {
     console.log(action.id, `missing player ${userID}`)
     return
   }
-
-  // console.log(`\n\n${fillConsoleWindow('-')}\n${fillConsoleWindow('-')}\n${fillConsoleWindow('-')}\n${fillConsoleWindow('-')}`)
-  // console.log({
-  //   userID,
-  //   button: action.button,
-  //   big: action.big,
-  //   small: action.small,
-  //   round: action.round,
-  //   pot: action.pot,
-  //   owner: group.owner,
-  //   users: group.users.map(user => {
-  //     const turn = action.turn[user.id]
-  //     return Object.values({
-  //       ...user,
-  //       ...turn,
-  //     })
-  //   }),
-  //   newAction,
-  // })
-  // console.log(`${fillConsoleWindow('^')}\n\n`)
 
   const nextUserIndex = getPlayer({
     start: userIndex,
@@ -371,22 +347,22 @@ const handleUpdate = async (
     action.big = userID
   }
 
-  // console.log('\n')
-  // console.log(fillConsoleWindow('='))
-  // console.log(
-  //   group.users.map(user => {
-  //     const turn = action.turn[user.id]
-
-  //     return Object.values({
-  //       ...user,
-  //       ...turn,
-  //     })
-  //   })
-  // )
-  // console.log(fillConsoleWindow('='))
+  // debug.endAction({ action, group })
 
   await update(action.id, action, Type.ActionRunning)
   await update(group.id, group, Type.Group)
+}
+
+const handleEndRound = async (
+  action: ActionRunning,
+  group: Group,
+  { newAction, userID }: Message
+) => {
+  debug.action({ action, group, newAction, userID })
+
+  if (newAction.type === NAE.Draw) {
+    console.log('handle draw')
+  }
 }
 
 mainLoop(CHANNEL, async maybeMessage => {
@@ -427,7 +403,7 @@ mainLoop(CHANNEL, async maybeMessage => {
       (message.newAction.type === NewActionEnum.Draw ||
         message.newAction.type === NewActionEnum.Winner)
     ) {
-      console.log('this!', action, group)
+      return handleEndRound(action, group, message)
     }
 
     console.log(action.id, 'group is in showdown')
@@ -438,11 +414,11 @@ mainLoop(CHANNEL, async maybeMessage => {
     action.queued[message.userID] = message.newAction
 
     console.log(
-      `\n\n storing action ${message.newAction.type} for user ${message.userID}`
+      action.id,
+      `storing action ${message.newAction.type} for user ${message.userID}`
     )
 
-    await update(action.id, action, Type.ActionRunning)
-    return
+    return await update(action.id, action, Type.ActionRunning)
   }
 
   return handleUpdate(action, group, message)

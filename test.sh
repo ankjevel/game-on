@@ -163,21 +163,22 @@ echo $action_id
 print "actions"
 echo "betting round"
 post "/action/${action_id}/${group}" $u_4 '{"type":"raise","value":1337}' # stored
-post "/action/${action_id}/${group}" $u_1 '{"type":"fold"}' # button
+# post "/action/${action_id}/${group}" $u_1 '{"type":"fold"}' # button
+post "/action/${action_id}/${group}" $u_1 '{"type":"bet"}' # button
 post "/action/${action_id}/${group}" $u_2 '{"type":"bet"}'
 post "/action/${action_id}/${group}" $u_3 '{"type":"bet"}'
 post "/action/${action_id}/${group}" $u_4 '{"type":"call"}'
 echo "end betting round (all should left, pot at 20)"
 
 echo "round 1"
-# post "/action/${action_id}/${group}" $u_1 '{"type":"check"}' # button
+post "/action/${action_id}/${group}" $u_1 '{"type":"check"}' # button
 post "/action/${action_id}/${group}" $u_2 '{"type":"check"}'
 post "/action/${action_id}/${group}" $u_3 '{"type":"check"}'
 post "/action/${action_id}/${group}" $u_4 '{"type":"check"}'
 echo "end round 1 (all should be left, pot stays the same)"
 
 echo "round 2"
-# post "/action/${action_id}/${group}" $u_1 '{"type":"check"}'
+post "/action/${action_id}/${group}" $u_1 '{"type":"check"}'
 post "/action/${action_id}/${group}" $u_2 '{"type":"raise","value":10}'  # new button
 post "/action/${action_id}/${group}" $u_3 '{"type":"fold"}'
 post "/action/${action_id}/${group}" $u_4 '{"type":"call"}'
@@ -186,8 +187,8 @@ echo "end round 2 (user 1 should fold, pot at 50)"
 
 echo "round 3"
 post "/action/${action_id}/${group}" $u_2 '{"type":"check"}' # button
-# post "/action/${action_id}/${group}" $u_1 '{"type":"check"}'
 post "/action/${action_id}/${group}" $u_4 '{"type":"check"}'
+post "/action/${action_id}/${group}" $u_1 '{"type":"check"}'
 echo "end round 3 (3 users remaing, pot unchanged)"
 
 echo "showdown draw"
