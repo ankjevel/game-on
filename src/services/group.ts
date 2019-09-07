@@ -307,7 +307,7 @@ export const startGame = async ({
         [playerTwo.id]: { bet: res.blind.big, status: NewActionEnum.None },
       }
 
-      res.users.slice(2, -1).forEach(user => {
+      res.users.slice(2).forEach(user => {
         turn[user.id] = {
           bet: 0,
           status: NewActionEnum.None,
@@ -333,6 +333,12 @@ export const startGame = async ({
       }
 
       res.action = action.id
+
+      console.log(
+        action.id,
+        `new action: \n\t${res.users.map(user => user.id).join(', ')}`
+      )
+
       return res
     }
   )

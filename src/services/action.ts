@@ -120,6 +120,9 @@ const handleUpdate = async (
   const playerAnte = player.bet
   let roundEnded = false
 
+  const applyAction = (userAction: NAE) =>
+    action.round === 0 ? NAE.Bet : userAction
+
   const raisePot = (raise = 0) => {
     const sum = currentAnte - playerAnte + raise
     if (user.sum < sum) {
@@ -159,7 +162,7 @@ const handleUpdate = async (
         return
       }
 
-      player.status = NAE.Call
+      player.status = applyAction(NAE.Call)
       break
     }
 
@@ -174,7 +177,7 @@ const handleUpdate = async (
       }
 
       action.big = userID
-      player.status = NAE.Raise
+      player.status = applyAction(NAE.Raise)
       break
     }
 
@@ -189,11 +192,12 @@ const handleUpdate = async (
         return
       }
 
-      player.status = NAE.Check
+      player.status = applyAction(NAE.Check)
       break
     }
 
     default:
+      console.log(action.id, `unhandled event: ${userAction.type}`)
       return
 
     // case NAE.AllIn:
@@ -221,6 +225,7 @@ const handleUpdate = async (
     ) {
       roundEnded = true
     } else {
+      console.log(action.id, `new button: ${nextUserID} [was ${action.button}]`)
       action.button = nextUserID
     }
   } else {
@@ -243,16 +248,19 @@ const handleUpdate = async (
 
     winner.sum = action.pot
     roundEnded = true
+    console.log(action.id, `round ended, winner declared [${winnerID}]`)
   }
 
   if (roundEnded) {
     console.log({ nextUserID })
     console.log(action.id, 'round ended')
     console.log(action, group)
-  } else if (isBig && player.status !== NAE.Raise) {
-    console.log(action.id, 'new big')
+  } else if (isBig && player.status === NAE.Raise) {
+    action.round += 1
+    console.log(action.id, 'new round')
   }
 
+  // console.log(action, group, player)
   await update(action.id, action, Type.ActionRunning)
   await update(group.id, group, Type.Group)
 }
