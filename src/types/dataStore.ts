@@ -78,13 +78,14 @@ export const isNewAction = (
   }
 
   switch (any.type) {
-    case NewActionEnum.None:
     case NewActionEnum.AllIn:
     case NewActionEnum.Back:
     case NewActionEnum.Bet:
     case NewActionEnum.Call:
     case NewActionEnum.Check:
+    case NewActionEnum.Draw:
     case NewActionEnum.Fold:
+    case NewActionEnum.None:
     case NewActionEnum.SittingOut:
       return isNumber(any.value) === false
     default:

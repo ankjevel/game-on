@@ -6,11 +6,21 @@ import {
   checkId,
   isNewAction,
   NewActionEnum as NAE,
+  NewActionEnum,
+  UserSummary,
 } from '../types/dataStore'
 import { getWrapper as getFromStore, update } from './dataStore'
 import { pushSession } from './session'
-import { parse, hasProp } from '../utils'
+import { parse, hasProp, clone, fillConsoleWindow } from '../utils'
 import mainLoop from './messageListener'
+
+type QueryNext = {
+  start: number
+  userID: User['id']
+  group: Group
+  action: ActionRunning
+  nextIndex: (current: number) => number
+}
 
 const CHANNEL = 'message'
 
@@ -63,7 +73,7 @@ export const newAction = async ({
     group == null ||
     group.users.some(user => user.id === userID) === false ||
     group.action !== action.id ||
-    (action.showdown &&
+    (action.round === 4 &&
       group.owner !== userID &&
       (newAction.type !== NAE.Winner && newAction.type !== NAE.Draw))
   ) {
@@ -73,16 +83,8 @@ export const newAction = async ({
   await push({ actionID, userID, groupID, newAction })
 }
 
-const playersLeft = (action: ActionRunning) =>
-  Object.values(action.turn).filter(u => u.status !== NAE.Fold).length
-
-type QueryNext = {
-  start: number
-  userID: User['id']
-  group: Group
-  action: ActionRunning
-  nextIndex: (current: number) => number
-}
+const applyAction = (userAction: NAE, action: ActionRunning) =>
+  action.round === 0 ? NAE.Bet : userAction
 
 const getPlayer = ({ start, group, action, userID, nextIndex }: QueryNext) => {
   const max = group.users.length
@@ -119,12 +121,41 @@ const getPlayer = ({ start, group, action, userID, nextIndex }: QueryNext) => {
   return nextUserIndex
 }
 
+const raisePot = ({
+  raise = 0,
+  currentAnte,
+  playerAnte,
+  user,
+  action,
+  player,
+}: {
+  raise?: number
+  currentAnte: number
+  playerAnte: number
+  user: Group['users'][0]
+  action: ActionRunning
+  player: UserSummary
+}) => {
+  const sum = currentAnte - playerAnte + raise
+  if (user.sum < sum) {
+    console.log(action.id, 'cant update, not enough funds')
+    return false
+  }
+
+  user.sum -= sum
+  player.bet += sum
+  action.pot += sum
+
+  return true
+}
+
 const handleUpdate = async (
   action: ActionRunning,
   group: Group,
   { newAction, userID }: Message
 ) => {
-  const isBig = userID === action.big
+  const currentBig = clone(action.big)
+  const isBig = userID === currentBig
   const currentAnte = action.turn[action.big].bet
   const userAction =
     newAction.type === NAE.None && action.queued[userID]
@@ -132,57 +163,42 @@ const handleUpdate = async (
       : newAction
   const userIndex = group.users.findIndex(({ id }) => id === userID)
   const user = group.users[userIndex] as Group['users'][0]
-
   const player = action.turn[userID]
+  const currentStatus = clone(player.status)
+  const playerAnte = player.bet
 
   if (!player) {
     console.log(action.id, `missing player ${userID}`)
     return
   }
 
-  const fill = (char: string) => char.repeat(process.stdout.columns || 0)
+  // console.log(`\n\n${fillConsoleWindow('-')}\n${fillConsoleWindow('-')}\n${fillConsoleWindow('-')}\n${fillConsoleWindow('-')}`)
+  // console.log({
+  //   userID,
+  //   button: action.button,
+  //   big: action.big,
+  //   small: action.small,
+  //   round: action.round,
+  //   pot: action.pot,
+  //   owner: group.owner,
+  //   users: group.users.map(user => {
+  //     const turn = action.turn[user.id]
+  //     return Object.values({
+  //       ...user,
+  //       ...turn,
+  //     })
+  //   }),
+  //   newAction,
+  // })
+  // console.log(`${fillConsoleWindow('^')}\n\n`)
 
-  console.log(`\n\n${fill('-')}\n${fill('-')}\n${fill('-')}\n${fill('-')}`)
-  console.log({
+  const nextUserIndex = getPlayer({
+    start: userIndex,
     userID,
-    button: action.button,
-    big: action.big,
-    round: action.round,
-    pot: action.pot,
-    users: group.users.map(user => {
-      const turn = action.turn[user.id]
-
-      return {
-        ...turn,
-        ...user,
-      }
-    }),
-    newAction,
+    group,
+    action,
+    nextIndex: current => (current + 1) % group.users.length,
   })
-  console.log(`${fill('^')}\n\n`)
-
-  const playerAnte = player.bet
-  let roundEnded = false
-
-  const applyAction = (userAction: NAE) => {
-    const nextAction = action.round === 0 ? NAE.Bet : userAction
-    console.log(`apply action ${userAction}? will return ${nextAction}`)
-    return nextAction
-  }
-
-  const raisePot = (raise = 0) => {
-    const sum = currentAnte - playerAnte + raise
-    if (user.sum < sum) {
-      console.log(action.id, 'cant update, not enough funds')
-      return false
-    }
-
-    user.sum -= sum
-    player.bet += sum
-    action.pot += sum
-
-    return true
-  }
 
   switch (userAction.type) {
     case NAE.None: {
@@ -196,7 +212,15 @@ const handleUpdate = async (
         return
       }
 
-      if (!raisePot()) {
+      if (
+        !raisePot({
+          currentAnte,
+          playerAnte,
+          user,
+          action,
+          player,
+        })
+      ) {
         return
       }
 
@@ -205,11 +229,19 @@ const handleUpdate = async (
     }
 
     case NAE.Call: {
-      if (!raisePot()) {
+      if (
+        !raisePot({
+          currentAnte,
+          playerAnte,
+          user,
+          action,
+          player,
+        })
+      ) {
         return
       }
 
-      player.status = applyAction(NAE.Call)
+      player.status = applyAction(NAE.Call, action)
       break
     }
 
@@ -219,16 +251,38 @@ const handleUpdate = async (
         return
       }
 
-      if (!raisePot(userAction.value)) {
+      if (
+        !raisePot({
+          raise: userAction.value,
+          currentAnte,
+          playerAnte,
+          user,
+          action,
+          player,
+        })
+      ) {
         return
       }
 
       action.big = userID
-      player.status = applyAction(NAE.Raise)
+      player.status = applyAction(NAE.Raise, action)
       break
     }
 
     case NAE.Fold: {
+      if (
+        // edge case, where small blind folds in betting round
+        action.round === 0 &&
+        action.small === userID &&
+        player.status === NAE.None
+      ) {
+        if (nextUserIndex == null || group.users[nextUserIndex] == null) {
+          console.log(action.id, 'cant fold if no one else is in game :(')
+          return
+        }
+        console.log(action.id, 'why you do this? folding')
+        action.big = group.users[nextUserIndex].id
+      }
       player.status = NAE.Fold
       break
     }
@@ -257,109 +311,80 @@ const handleUpdate = async (
         }
 
         const prev = action.turn[group.users[previousUserIndex].id]
-        const curr = action.turn[userID]
 
-        if (prev.bet !== curr.bet) {
+        if (prev.bet !== player.bet) {
           console.log(action.id, 'cant check, must raise (also not big)')
           return
         }
 
-        player.status = applyAction(NAE.Call)
+        player.status = applyAction(NAE.Call, action)
         break
       }
 
-      player.status = applyAction(NAE.Check)
+      player.status = applyAction(NAE.Check, action)
       break
     }
 
     default:
       console.log(action.id, `unhandled event: ${userAction.type}`)
       return
-
-    // case NAE.AllIn:
-    // case NAE.Back:
-    // case NAE.Bank:
-    // case NAE.Join:
-    // case NAE.Leave:
-    // case NAE.SittingOut:
   }
 
-  let nextUserID: MaybeUndefined<User['id']>
-  if (playersLeft(action) > 1) {
-    const nextUserIndex = getPlayer({
-      start: userIndex,
-      userID,
-      group,
-      action,
-      nextIndex: current => (current + 1) % group.users.length,
-    })
+  if (nextUserIndex == null || group.users[nextUserIndex] == null) {
+    console.log(action.id, 'missing next player')
+    return
+  }
 
-    if (nextUserIndex == null) {
-      console.log(action.id, 'missing next player')
-      return
+  const nextUserID = group.users[nextUserIndex].id
+  console.log(action.id, `new button: ${action.button} => ${nextUserID}`)
+  action.button = nextUserID
+
+  if (action.round === 0) {
+    if (Object.values(action.turn).every(turn => turn.status !== NAE.None)) {
+      action.round += 1
+      action.button = action.big
+      console.log(action.id, 'should end betting round')
     }
-
-    nextUserID = group.users[nextUserIndex].id
-
-    if (
-      nextUserID === action.big &&
-      action.turn[nextUserID].status !== NAE.None
-    ) {
-      roundEnded = true
+  } else if (nextUserID === currentBig) {
+    ++action.round
+    if (action.round === 4) {
+      console.log(action.id, 'showdown!')
     } else {
-      action.button = nextUserID
-      console.log(action.id, `new button: ${nextUserID} [was ${action.button}]`)
+      console.log(action.id, 'new round')
     }
-  } else {
-    const unFolded = Object.entries(action.turn).find(
-      ([, value]) => value.status !== NAE.Fold
-    )
-
-    if (unFolded == null) {
-      console.log(action.id, 'cant find winner :(')
-      return
-    }
-
-    const [winnerID] = unFolded
-    const winner = group.users.find(user => user.id === winnerID)
-
-    if (winner == null) {
-      console.log(action.id, 'winner not found :(')
-      return
-    }
-
-    winner.sum = action.pot
-    roundEnded = true
-    console.log(action.id, `round ended, winner declared [${winnerID}]`)
-  }
-
-  if (roundEnded) {
-    console.log(action.id, 'round ended')
-    action.round += 1
-    action.button = action.big
-  } else if (isBig && player.status === NAE.Raise) {
-    action.round += 1
-    console.log(action.id, 'new round')
-  }
-
-  if (
-    action.round === 0 &&
-    Object.values(action.turn).every(turn => turn.status !== NAE.None)
-  ) {
-    action.round += 1
-    console.log(action.id, 'should end betting round')
   }
 
   if (action.queued[userID]) {
     delete action.queued[userID]
   }
 
-  console.log('\n')
-  console.log(fill('='))
-  console.log(action.turn)
-  console.log(fill('='))
+  if (
+    // again, small becomes the big in first round
+    action.round === 0 &&
+    action.small === userID &&
+    currentStatus === NAE.None &&
+    // edge case where small folds at beginning of game
+    player.status !== NAE.Fold &&
+    action.big !== userID
+  ) {
+    console.log(action.id, 'set BIG <- SMALL')
+    action.big = userID
+  }
 
-  // console.log(action, group, player)
+  // console.log('\n')
+  // console.log(fillConsoleWindow('='))
+  // console.log(
+  //   group.users.map(user => {
+  //     const turn = action.turn[user.id]
+
+  //     return Object.values({
+  //       ...user,
+  //       ...turn,
+  //     })
+  //   })
+  // )
+  // console.log(fillConsoleWindow('='))
+
   await update(action.id, action, Type.ActionRunning)
   await update(group.id, group, Type.Group)
 }
@@ -396,12 +421,26 @@ mainLoop(CHANNEL, async maybeMessage => {
     return
   }
 
+  if (action.round === 4) {
+    if (
+      group.owner === message.userID &&
+      (message.newAction.type === NewActionEnum.Draw ||
+        message.newAction.type === NewActionEnum.Winner)
+    ) {
+      console.log('this!', action, group)
+    }
+
+    console.log(action.id, 'group is in showdown')
+    return
+  }
+
   if (message.userID !== action.button) {
     action.queued[message.userID] = message.newAction
 
     console.log(
       `\n\n storing action ${message.newAction.type} for user ${message.userID}`
     )
+
     await update(action.id, action, Type.ActionRunning)
     return
   }

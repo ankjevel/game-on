@@ -326,10 +326,10 @@ export const startGame = async ({
         queued: {},
         button: smallBlind.id,
         big: bigBlind.id,
+        small: smallBlind.id,
         turn,
         pot: res.blind.small + res.blind.big,
         round: 0,
-        showdown: false,
       }))
 
       if (action == null) {

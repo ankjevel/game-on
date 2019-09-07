@@ -7,15 +7,20 @@ export interface KeyValue<T> {
 }
 
 export interface IActionRunning<T, Y> extends Action {
-  round: 0 | 1 | 2 | 3
+  /**
+   * 0: betting round
+   * 1-3: regular rounds
+   * 4: showdown
+   */
+  round: 0 | 1 | 2 | 3 | 4
   groupID: Group['id']
   queued: KeyValue<T>
   turn: KeyValue<Y>
   button: User['id']
   big: User['id']
+  small: User['id']
   pot: number
   sittingOut?: User['id'][]
-  showdown: boolean
 }
 
 export interface User {

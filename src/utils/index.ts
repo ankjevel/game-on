@@ -1,4 +1,5 @@
 import clone from './clone'
+import fillConsoleWindow from './fillConsoleWindow'
 import hasProp from './hasProp'
 import isNumber from './isNumber'
 import looksLikeEmail from './looksLikeEmail'
@@ -9,6 +10,7 @@ import wait from './wait'
 
 export {
   clone,
+  fillConsoleWindow,
   hasProp,
   isNumber,
   looksLikeEmail,
@@ -20,6 +22,7 @@ export {
 
 export default {
   clone,
+  fillConsoleWindow,
   hasProp,
   isNumber,
   looksLikeEmail,
