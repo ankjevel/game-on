@@ -161,7 +161,7 @@ const handleUpdate = async (
   const currentStatus = clone(player.status)
   const playerAnte = player.bet
 
-  // debug.action({ action, group, newAction, userID })
+  debug.action({ action, group, newAction, userID })
 
   if (!player) {
     console.log(action.id, `missing player ${userID}`)
@@ -292,9 +292,6 @@ const handleUpdate = async (
           console.log(action.id, 'cant check, must raise (also not big)')
           return
         }
-
-        player.status = applyAction(NAE.Call, action)
-        break
       }
 
       player.status = applyAction(NAE.Check, action)
@@ -347,10 +344,51 @@ const handleUpdate = async (
     action.big = userID
   }
 
-  // debug.endAction({ action, group })
+  debug.endAction({ action, group })
 
   await update(action.id, action, Type.ActionRunning)
   await update(group.id, group, Type.Group)
+}
+
+type ActionGroup = {
+  action: ActionRunning
+  group: Group
+}
+
+const resetAction = ({
+  action,
+  group,
+  pot = 0,
+}: ActionGroup & {
+  pot?: ActionRunning['pot']
+}) => {
+  const newSmall = action.big
+  const indexOfSmall = group.users.findIndex(user => user.id === newSmall)
+  const indexOfBig = (indexOfSmall + 1) % group.users.length
+  const newBig = group.users[indexOfBig].id
+
+  const turn = {
+    [newSmall]: { bet: group.blind.small, status: NAE.None },
+    [newBig]: { bet: group.blind.big, status: NAE.None },
+  }
+
+  group.users
+    .filter(({ id }) => id !== newSmall && id !== newBig)
+    .forEach(user => {
+      turn[user.id] = {
+        bet: 0,
+        status: NAE.None,
+      }
+    })
+
+  action.pot = pot + group.blind.small + group.blind.big
+  action.round = 0
+  action.turn = turn
+  action.sittingOut = undefined
+  action.button = newSmall
+  action.queued = {}
+  action.big = newBig
+  action.small = newSmall
 }
 
 const handleEndRound = async (
@@ -360,9 +398,28 @@ const handleEndRound = async (
 ) => {
   debug.action({ action, group, newAction, userID })
 
+  let pot = 0
   if (newAction.type === NAE.Draw) {
-    console.log('handle draw')
+    const ids = Object.entries(action.turn)
+      .filter(([, value]) => value.status !== NAE.Fold)
+      .map(([id]) => id)
+
+    const share = Math.floor(action.pot / ids.length)
+
+    ids.forEach(id => {
+      const user = group.users.find(user => user.id === id) || { sum: 0 }
+      user.sum += share
+    })
+
+    pot = action.pot - share * ids.length
   }
+
+  resetAction({ action, pot, group })
+
+  await update(group.id, group, Type.Group)
+  await update(action.id, action, Type.ActionRunning)
+
+  debug.endAction({ action, group })
 }
 
 mainLoop(CHANNEL, async maybeMessage => {
