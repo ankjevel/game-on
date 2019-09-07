@@ -22,12 +22,15 @@ export type ActionRunning = IActionRunning<NewAction, UserSummary>
 
 export enum NewActionEnum {
   None = 'none',
+  Bet = 'bet',
   Check = 'check',
   Call = 'call',
   Raise = 'raise',
   AllIn = 'allIn',
   Fold = 'fold',
 
+  Draw = 'draw',
+  Winner = 'winner',
   Back = 'back',
   Bank = 'bank',
   Join = 'join',
@@ -45,28 +48,12 @@ export type UserSummary = {
   status: NewActionEnum
 }
 
-export const isUserSummary = (any: any): any is UserSummary => {
-  if (
-    any == null ||
-    !hasProp<any>(any, 'bet') ||
-    !isNumber(any.bet) ||
-    !hasProp<any>(any, 'status')
-  ) {
-    return false
-  }
-
-  switch (any.status) {
-    case NewActionEnum.None:
-    case NewActionEnum.Check:
-    case NewActionEnum.Call:
-    case NewActionEnum.Raise:
-    case NewActionEnum.AllIn:
-    case NewActionEnum.Fold:
-      return true
-    default:
-      return false
-  }
-}
+export const isUserSummary = (any: any): any is UserSummary =>
+  any != null &&
+  hasProp<any>(any, 'bet') &&
+  isNumber(any.bet) &&
+  hasProp<any>(any, 'status') &&
+  isNewActionType((any as any).status)
 
 export const isNewActionType = (any: any): any is NewActionEnum =>
   Object.values(NewActionEnum).includes(any)

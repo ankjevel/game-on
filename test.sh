@@ -57,12 +57,16 @@ echo "clear redis"
 docker exec -it `docker ps --filter name="$(basename $(pwd))_redis" --format={{.ID}}` redis-cli flushall &> /dev/null
 
 echo "create user 1"
-post "/user" "" '{"name":"foo","email":"dennis@pettersson.se","p1":"dennis222","p2":"dennis222"}'
+post "/user" "" '{"name":"user_1","email":"user_1@mail.com","p1":"xxxXx_111","p2":"xxxXx_111"}'
 header_1=`last`
 
 echo "create user 2"
-post "/user" "" '{"name":"dennis","email":"dennis@pett.se","p1":"dennis222","p2":"dennis222"}'
+post "/user" "" '{"name":"user_2","email":"user_2@mail.com","p1":"xxxXx_222","p2":"xxxXx_222"}'
 header_2=`last`
+
+echo "create user 3"
+post "/user" "" '{"name":"user_3","email":"user_3@mail.com","p1":"xxxXx_333","p2":"xxxXx_333"}'
+header_3=`last`
 
 print "create group"
 post "/group" $header_1 '{"name":"dennis"}'
@@ -93,13 +97,18 @@ print "delete group"
 delete "/group/${group}" $header_1
 last
 
+print "create new group (user 1)"
 post "/group" $header_1 '{"name":"dennis_second"}'
 group=`last|jq .id|strip`
 group_name=`last|jq .name|strip`
 group_start_sum=`last|jq .startSum`
 
-print "join new group"
+print "join new group (user 2)"
 put "/group/${group}/join" $header_2
+last|jq -c '.users | map(.id)'
+
+print "join new group (user 3)"
+put "/group/${group}/join" $header_3
 last|jq -c '.users | map(.id)'
 
 print "change order"
@@ -125,3 +134,4 @@ post "/action/${action_id}/${group}" $header_2 '{"type":"none"}'
 post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
 post "/action/${action_id}/${group}" $header_2 '{"type":"call"}'
 post "/action/${action_id}/${group}" $header_1 '{"type":"none"}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"fold"}'

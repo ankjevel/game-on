@@ -70,92 +70,21 @@ export const newAction = async ({
   await push({ actionID, userID, groupID, newAction })
 }
 
-const handleUpdate = async (
-  action: ActionRunning,
-  group: Group,
-  { newAction, userID }: Message
-) => {
-  const isBig = userID === action.big
-  const currentAnte = action.turn[action.big].bet
+const playersLeft = (action: ActionRunning) =>
+  Object.values(action.turn).filter(u => u.status !== NAE.Fold).length
 
-  const userAction =
-    newAction.type === NAE.None && action.queued[userID]
-      ? action.queued[userID]
-      : newAction
-
-  const userIndex = group.users.findIndex(({ id }) => id === userID)
-  const user = group.users[userIndex] as Group['users'][0]
-  const player = action.turn[userID]
-  const playerAnte = player.bet
-
-  const raisePot = (raise = 0) => {
-    const sum = currentAnte - playerAnte + raise
-    if (user.sum < sum) {
-      console.log('cant update, not enough funds')
-      return false
-    }
-
-    user.sum -= sum
-    player.bet += sum
-    action.pot += sum
-
-    return true
-  }
-
-  switch (userAction.type) {
-    case NAE.None: {
-      console.log('no stored actions')
-      return
-    }
-    case NAE.Call: {
-      if (!raisePot()) {
-        return
-      }
-
-      player.status = NAE.Call
-      break
-    }
-    case NAE.Raise: {
-      if (userAction.value == null) {
-        console.log('nothing raised')
-        return
-      }
-
-      if (!raisePot(userAction.value)) {
-        return
-      }
-
-      player.status = NAE.Raise
-      break
-    }
-    case NAE.AllIn:
-    case NAE.Fold:
-      break
-    case NAE.Check: {
-      if (!isBig) {
-        console.log('cant check, not "leader"')
-        return
-      }
-
-      player.status = NAE.Check
-      break
-    }
-    // case NAE.Back:
-    // case NAE.Bank:
-    // case NAE.Join:
-    // case NAE.Leave:
-    // case NAE.SittingOut:
-  }
-
-  let nextUserIndex = userIndex
-  let i = 0
+const getNext = (start: number, group: Group, action: ActionRunning) => {
   const max = group.users.length
+  let i = 0
   let run = true
+  let nextUserIndex = start
+
   do {
     if (++i >= max) {
-      console.log('cant find next player')
+      console.log(action.id, 'cant find next player')
       run = false
-      return
+      nextUserIndex = -1
+      break
     }
 
     nextUserIndex = (nextUserIndex + 1) % max
@@ -171,12 +100,161 @@ const handleUpdate = async (
     }
   } while (run)
 
-  action.button = group.users[nextUserIndex].id
+  return nextUserIndex
+}
+
+const handleUpdate = async (
+  action: ActionRunning,
+  group: Group,
+  { newAction, userID }: Message
+) => {
+  const isBig = userID === action.big
+  const currentAnte = action.turn[action.big].bet
+  const userAction =
+    newAction.type === NAE.None && action.queued[userID]
+      ? action.queued[userID]
+      : newAction
+  const userIndex = group.users.findIndex(({ id }) => id === userID)
+  const user = group.users[userIndex] as Group['users'][0]
+  const player = action.turn[userID]
+  const playerAnte = player.bet
+  let roundEnded = false
+
+  const raisePot = (raise = 0) => {
+    const sum = currentAnte - playerAnte + raise
+    if (user.sum < sum) {
+      console.log(action.id, 'cant update, not enough funds')
+      return false
+    }
+
+    user.sum -= sum
+    player.bet += sum
+    action.pot += sum
+
+    return true
+  }
+
+  switch (userAction.type) {
+    case NAE.None: {
+      console.log(action.id, 'no stored actions')
+      return
+    }
+
+    case NAE.Bet: {
+      if (player.status !== NAE.None) {
+        console.log(action.id, 'bet is only used in start of round')
+        return
+      }
+
+      if (!raisePot()) {
+        return
+      }
+
+      player.status = NAE.Bet
+      break
+    }
+
+    case NAE.Call: {
+      if (!raisePot()) {
+        return
+      }
+
+      player.status = NAE.Call
+      break
+    }
+
+    case NAE.Raise: {
+      if (userAction.value == null) {
+        console.log(action.id, 'nothing raised')
+        return
+      }
+
+      if (!raisePot(userAction.value)) {
+        return
+      }
+
+      action.big = userID
+      player.status = NAE.Raise
+      break
+    }
+
+    case NAE.Fold: {
+      player.status = NAE.Fold
+      break
+    }
+
+    case NAE.Check: {
+      if (!isBig) {
+        console.log(action.id, 'cant check, not "leader"')
+        return
+      }
+
+      player.status = NAE.Check
+      break
+    }
+
+    default:
+      return
+
+    // case NAE.AllIn:
+    // case NAE.Back:
+    // case NAE.Bank:
+    // case NAE.Join:
+    // case NAE.Leave:
+    // case NAE.SittingOut:
+  }
+
+  let nextUserID: MaybeUndefined<User['id']>
+  if (playersLeft(action) > 1) {
+    const nextUserIndex = getNext(userIndex, group, action)
+
+    if (nextUserIndex === -1) {
+      console.log(action.id, 'missing next player')
+      return
+    }
+
+    nextUserID = group.users[nextUserIndex].id
+
+    if (
+      nextUserID === action.big &&
+      action.turn[nextUserID].status !== NAE.None
+    ) {
+      roundEnded = true
+    } else {
+      action.button = nextUserID
+    }
+  } else {
+    const unFolded = Object.entries(action.turn).find(
+      ([, value]) => value.status !== NAE.Fold
+    )
+
+    if (unFolded == null) {
+      console.log(action.id, 'cant find winner :(')
+      return
+    }
+
+    const [winnerID] = unFolded
+    const winner = group.users.find(user => user.id === winnerID)
+
+    if (winner == null) {
+      console.log(action.id, 'winner not found :(')
+      return
+    }
+
+    winner.sum = action.pot
+    roundEnded = true
+  }
+
+  if (roundEnded) {
+    console.log({ nextUserID })
+    console.log(action.id, 'round ended')
+    console.log(action, group)
+  } else if (isBig && player.status !== NAE.Raise) {
+    console.log(action.id, 'new big')
+  }
 
   await update(action.id, action, Type.ActionRunning)
   await update(group.id, group, Type.Group)
-
-  console.log(action, group)
 }
 
 mainLoop(CHANNEL, async maybeMessage => {
@@ -197,7 +275,7 @@ mainLoop(CHANNEL, async maybeMessage => {
   })
 
   if (group == null) {
-    console.info(`missing group/action: ${message.groupID}`)
+    console.info(`missing group: ${message.groupID}`)
     return
   }
 
@@ -207,7 +285,7 @@ mainLoop(CHANNEL, async maybeMessage => {
   }
 
   if (action.groupID !== group.id) {
-    console.log(`[${action.id}] wrong group: ${action.groupID} !== ${group.id}`)
+    console.log(action.id, `wrong group: ${action.groupID} !== ${group.id}`)
     return
   }
 
