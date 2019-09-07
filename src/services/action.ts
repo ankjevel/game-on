@@ -133,7 +133,6 @@ const handleUpdate = async (
   const userIndex = group.users.findIndex(({ id }) => id === userID)
   const user = group.users[userIndex] as Group['users'][0]
 
-  console.log(action.turn)
   const player = action.turn[userID]
 
   if (!player) {
@@ -141,11 +140,35 @@ const handleUpdate = async (
     return
   }
 
+  const fill = (char: string) => char.repeat(process.stdout.columns || 0)
+
+  console.log(`\n\n${fill('-')}\n${fill('-')}\n${fill('-')}\n${fill('-')}`)
+  console.log({
+    userID,
+    button: action.button,
+    big: action.big,
+    round: action.round,
+    pot: action.pot,
+    users: group.users.map(user => {
+      const turn = action.turn[user.id]
+
+      return {
+        ...turn,
+        ...user,
+      }
+    }),
+    newAction,
+  })
+  console.log(`${fill('^')}\n\n`)
+
   const playerAnte = player.bet
   let roundEnded = false
 
-  const applyAction = (userAction: NAE) =>
-    action.round === 0 ? NAE.Bet : userAction
+  const applyAction = (userAction: NAE) => {
+    const nextAction = action.round === 0 ? NAE.Bet : userAction
+    console.log(`apply action ${userAction}? will return ${nextAction}`)
+    return nextAction
+  }
 
   const raisePot = (raise = 0) => {
     const sum = currentAnte - playerAnte + raise
@@ -217,7 +240,15 @@ const handleUpdate = async (
           userID,
           group,
           action,
-          nextIndex: current => (current + 1) % group.users.length,
+          nextIndex: current => {
+            --current
+
+            if (current === -1) {
+              current = group.users.length - 1
+            }
+
+            return current
+          },
         })
 
         if (previousUserIndex == null) {
@@ -260,15 +291,7 @@ const handleUpdate = async (
       userID,
       group,
       action,
-      nextIndex: current => {
-        --current
-
-        if (current === -1) {
-          current = group.users.length - 1
-        }
-
-        return current
-      },
+      nextIndex: current => (current + 1) % group.users.length,
     })
 
     if (nextUserIndex == null) {
@@ -284,8 +307,8 @@ const handleUpdate = async (
     ) {
       roundEnded = true
     } else {
-      console.log(action.id, `new button: ${nextUserID} [was ${action.button}]`)
-      action.button = nextUserID
+      action.button = action.big
+      console.log(action.id, `new button: ${action.big} [was ${action.button}]`)
     }
   } else {
     const unFolded = Object.entries(action.turn).find(
@@ -312,8 +335,8 @@ const handleUpdate = async (
 
   if (roundEnded) {
     console.log(action.id, 'round ended')
-    console.log(action, group)
     action.round += 1
+    action.button = action.big
   } else if (isBig && player.status === NAE.Raise) {
     action.round += 1
     console.log(action.id, 'new round')
@@ -330,6 +353,11 @@ const handleUpdate = async (
   if (action.queued[userID]) {
     delete action.queued[userID]
   }
+
+  console.log('\n')
+  console.log(fill('='))
+  console.log(action.turn)
+  console.log(fill('='))
 
   // console.log(action, group, player)
   await update(action.id, action, Type.ActionRunning)
@@ -370,6 +398,10 @@ mainLoop(CHANNEL, async maybeMessage => {
 
   if (message.userID !== action.button) {
     action.queued[message.userID] = message.newAction
+
+    console.log(
+      `\n\n storing action ${message.newAction.type} for user ${message.userID}`
+    )
     await update(action.id, action, Type.ActionRunning)
     return
   }

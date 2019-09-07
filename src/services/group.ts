@@ -301,7 +301,7 @@ export const startGame = async ({
     id,
     res => res.owner !== userID || res.users.length < 2,
     async res => {
-      const [buttonPlayer, smallBlind, bigBlind = buttonPlayer] = res.users
+      const [first, smallBlind, bigBlind = first] = res.users
 
       const turn = {
         [smallBlind.id]: { bet: res.blind.small, status: NewActionEnum.None },
@@ -324,7 +324,7 @@ export const startGame = async ({
         id,
         groupID: res.id,
         queued: {},
-        button: buttonPlayer.id,
+        button: smallBlind.id,
         big: bigBlind.id,
         turn,
         pot: res.blind.small + res.blind.big,

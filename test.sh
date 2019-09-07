@@ -120,8 +120,29 @@ print "join new group (user 4)"
 put "/group/${group}/join" $header_4
 last|jq -c '.users | map(.id)'
 
-print "change order"
-patch "/group/${group}/order" $header_1 "{\"0\":\"${user_2}\"}"
+user_3=`last|jq .users[2].id|strip`
+user_4=`last|jq .users[3].id|strip`
+
+new_order="$(echo $(cat <<-EOF
+{
+ "0": "${user_2}",
+ "1": "${user_3}",
+ "2": "${user_4}",
+ "3": "${user_1}"
+}
+EOF
+) | sed 's/ //g')"
+
+u_1=$header_3 # small, since user_2 is button
+u_2=$header_4 # big, since prev is small
+u_3=$header_1
+u_4=$header_2
+
+echo $new_order
+print "change order ($new_order)"
+patch "/group/${group}/order" $header_1 $new_order
+last
+
 last|jq -c '.users | map(.id)'
 
 print "update name (was: ${group_name})"
@@ -139,33 +160,34 @@ echo $action_id
 
 print "actions"
 echo "betting round"
-post "/action/${action_id}/${group}" $header_1 '{"type":"raise","value":1337}' # not big
-post "/action/${action_id}/${group}" $header_2 '{"type":"none"}' # small-blind
-post "/action/${action_id}/${group}" $header_2 '{"type":"bet"}' # big
-post "/action/${action_id}/${group}" $header_2 '{"type":"call"}'
-post "/action/${action_id}/${group}" $header_1 '{"type":"none"}' # call check from previous
-post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
-post "/action/${action_id}/${group}" $header_3 '{"type":"bet"}'
-post "/action/${action_id}/${group}" $header_4 '{"type":"bet"}'
-post "/action/${action_id}/${group}" $header_1 '{"type":"call"}'
+post "/action/${action_id}/${group}" $u_4 '{"type":"raise","value":1337}' # stored
+post "/action/${action_id}/${group}" $u_1 '{"type":"bet"}' # button
+post "/action/${action_id}/${group}" $u_2 '{"type":"bet"}'
+post "/action/${action_id}/${group}" $u_3 '{"type":"bet"}'
+post "/action/${action_id}/${group}" $u_4 '{"type":"call"}'
+echo "end betting round (all should left, pot at 20)"
 
 echo "round 1"
-post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
-post "/action/${action_id}/${group}" $header_3 '{"type":"check"}'
-post "/action/${action_id}/${group}" $header_4 '{"type":"check"}'
-post "/action/${action_id}/${group}" $header_1 '{"type":"check"}'
+post "/action/${action_id}/${group}" $u_1 '{"type":"check"}' # button
+post "/action/${action_id}/${group}" $u_2 '{"type":"check"}'
+post "/action/${action_id}/${group}" $u_3 '{"type":"check"}'
+post "/action/${action_id}/${group}" $u_4 '{"type":"check"}'
+echo "end round 1 (all should be left, pot stays the same)"
 
 echo "round 2"
-post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
-post "/action/${action_id}/${group}" $header_3 '{"type":"raise","value":10}'  # new big
-post "/action/${action_id}/${group}" $header_4 '{"type":"fold"}'
-post "/action/${action_id}/${group}" $header_1 '{"type":"call"}'
-post "/action/${action_id}/${group}" $header_2 '{"type":"call"}'
+post "/action/${action_id}/${group}" $u_1 '{"type":"check"}'
+post "/action/${action_id}/${group}" $u_2 '{"type":"raise","value":10}'  # new button
+post "/action/${action_id}/${group}" $u_3 '{"type":"fold"}'
+post "/action/${action_id}/${group}" $u_4 '{"type":"call"}'
+post "/action/${action_id}/${group}" $u_1 '{"type":"call"}'
+echo "end round 2 (user 1 should fold, pot at 50)"
 
 echo "round 3"
-post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
-post "/action/${action_id}/${group}" $header_3 '{"type":"check"}'
-post "/action/${action_id}/${group}" $header_1 '{"type":"check"}'
+post "/action/${action_id}/${group}" $u_2 '{"type":"check"}' # button
+post "/action/${action_id}/${group}" $u_1 '{"type":"check"}'
+post "/action/${action_id}/${group}" $u_4 '{"type":"check"}'
+echo "end round 3 (3 users remaing, pot unchanged)"
 
 echo "showdown draw"
-post "/action/${action_id}/${group}" $header_1 '{"type":"draw"}'
+post "/action/${action_id}/${group}" $u_4 '{"type":"draw"}'
+echo "end game (3 users remaing, pot divided at 3)"
