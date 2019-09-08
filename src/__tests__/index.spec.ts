@@ -19,6 +19,7 @@ jest.mock('../config', () => ({
     variable: 'foo',
     predictable: 'bar',
   },
+  debug: false,
 }))
 
 let user: any
@@ -62,6 +63,7 @@ describe('/', () => {
   it('gets a JSON on root-route', async () => {
     const { body } = await supertest(app)
       .get('/')
+      .accept('application/json')
       .expect(200)
 
     expect(body).toEqual({

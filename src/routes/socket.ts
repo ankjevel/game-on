@@ -2,7 +2,11 @@
 
 export const listen = (io: SocketIO.Server) => {
   io.on('connection', client => {
-    console.log(client)
+    const { id } = client
+    console.log(id, 'user connected')
+    client.on('disconnect', () => {
+      console.log(id, 'user disconnected')
+    })
   })
 
   console.log('listen on socket')
