@@ -4,10 +4,10 @@ import uuid from 'uuid'
 import * as userService from './user'
 import { parse } from '../utils'
 import redis from '../adapters/redis'
+import { publish } from './pubsub'
 
 import {
   Action,
-  ActionRunning,
   GetResult,
   Group,
   isAction,
@@ -76,13 +76,9 @@ export const update = async <T extends Types>(
     return
   }
 
-  await client.set(
-    id,
-    JSON.stringify({
-      ...prev,
-      ...data,
-    })
-  )
+  const toSave = JSON.stringify({ ...prev, ...data })
+  await client.set(id, toSave)
+  await publish(`update:${id}`, toSave)
 }
 
 const getQuery = ({
@@ -122,6 +118,7 @@ export const del = async ({
   }
 
   await client.del(query)
+  await publish(`del:${id}`, '')
 
   return true
 }

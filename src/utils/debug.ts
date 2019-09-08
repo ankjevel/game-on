@@ -2,6 +2,8 @@ import { ActionRunning } from '../types/dataStore'
 import { Message } from '../types/action'
 import { Group } from 'dataStore'
 
+import { debug } from '../config'
+
 export const fill = (char: string) => char.repeat(process.stdout.columns || 0)
 
 export const action = ({
@@ -15,6 +17,9 @@ export const action = ({
   newAction: Message['newAction']
   userID: Message['userID']
 }) => {
+  if (!debug) {
+    return
+  }
   console.log(`\n\n${fill('-')}\n${fill('-')}`)
   console.log({
     userID,
@@ -43,6 +48,9 @@ export const endAction = ({
   action: ActionRunning
   group: Group
 }) => {
+  if (!debug) {
+    return
+  }
   console.log('\n')
   console.log(fill('='))
   console.log(

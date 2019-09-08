@@ -5,6 +5,7 @@ import { name, version } from '../package.json'
 const config = nconf({
   file: `${__dirname}/../config.json`,
   defaults: {
+    debug: false,
     encryption: {
       variable: 'some key or something',
       predictable: 'some other key',
@@ -21,6 +22,7 @@ const config = nconf({
   },
 })
 
+export const debug = config.get<Config.Debug>('debug')
 export const encryption = config.get<Config.Encryption>('encryption')
 export const express = config.get<Config.Express>('express')
 export const jwt = config.get<Config.JWT>('jwt')
@@ -29,6 +31,7 @@ export const packageJSON = config.get<Config.PackageJSON>('packageJSON')
 export const redis = config.get<Config.Redis>('redis')
 
 export default {
+  debug,
   encryption,
   express,
   jwt,

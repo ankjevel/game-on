@@ -31,6 +31,7 @@ jest.mock('express-jwt', () => () => jwtMock)
 jest.mock('ioredis')
 jest.mock('../services/dataStore')
 jest.mock('../types/dataStore')
+jest.mock('../routes/socket')
 
 import app, { server } from '../index'
 
