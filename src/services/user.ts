@@ -100,7 +100,7 @@ export const checkAuthAndReturnUser = async ({
   }
 
   if (user == null) {
-    console.info(`missing user ${id || email}`)
+    console.log(`missing user ${id || email}`)
     return null
   }
 
