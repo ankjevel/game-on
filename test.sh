@@ -224,7 +224,7 @@ echo "end round 1, two went all in, 1 folded and one continued"
 winners="$(echo $(cat <<-EOF
 {
  "type": "winner",
- "winners": ["${user_1}","${user_3}","${user_4}"]
+ "winners": ["${user_4}","${user_3}","${user_1}"]
 }
 EOF
 ) | sed 's/ //g')"

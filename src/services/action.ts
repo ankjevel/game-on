@@ -24,6 +24,11 @@ type QueryNext = {
   check?: (value: NAE) => Boolean
 }
 
+type Share = {
+  id: User['id']
+  sum: number
+}
+
 const CHANNEL = 'message'
 
 const isMessage = (input: Message | any): input is Message =>
@@ -506,18 +511,65 @@ const resetAction = ({
   action.queued = {}
   action.big = newBig.id
   action.small = newSmall.id
+
+  debug.endAction({ action, group })
+  console.log(action.id, 'should have cleared')
+}
+
+interface ActionRunningWithSidePot extends ActionRunning {
+  sidePot: NonNullable<ActionRunning['sidePot']>
 }
 
 const handleEndRoundWithSidePot = async (
-  action: ActionRunning,
+  action: ActionRunningWithSidePot,
   group: Group,
   newAction: Message['newAction']
 ) => {
-  console.log({
-    action,
-    group,
-    newAction,
+  if (newAction.winners == null || Array.isArray(newAction.winners) === false) {
+    console.log(action.id, 'ending without sharing sidepot is now allowed')
+    return
+  }
+
+  let pot = clone(action.pot)
+  let winners = clone(newAction.winners)
+
+  const share: Share[] = []
+
+  action.sidePot.forEach(sidepot => {
+    const wonSidePot = sidepot.id === winners[0]
+    if (wonSidePot) {
+      const won = Math.floor(
+        (sidepot.sum - (action.pot - pot)) * winners.length
+      )
+      share.push({
+        id: sidepot.id,
+        sum: won,
+      })
+      pot -= won
+    }
+    winners = winners.filter(id => id !== sidepot.id)
   })
+
+  if (winners.length) {
+    const sum = Math.floor(pot / winners.length)
+    winners.forEach(id => {
+      share.push({ id, sum })
+    })
+    pot -= sum * winners.length
+  }
+
+  share.forEach(({ id, sum }) => {
+    const user = group.users.find(user => user.id === id)
+    if (user == null) {
+      return
+    }
+    user.sum += sum
+  })
+
+  resetAction({ action, pot, group })
+
+  await update(group.id, group, Type.Group)
+  await update(action.id, action, Type.ActionRunning)
 }
 
 const handleEndRound = async (
@@ -526,7 +578,11 @@ const handleEndRound = async (
   newAction: Message['newAction']
 ) => {
   if (action.sidePot != null) {
-    return handleEndRoundWithSidePot(action, group, newAction)
+    return handleEndRoundWithSidePot(
+      action as ActionRunningWithSidePot,
+      group,
+      newAction
+    )
   }
 
   let pot = 0
