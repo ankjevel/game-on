@@ -10,7 +10,7 @@ import {
   UserSummary,
 } from '../types/dataStore'
 import { Message } from '../types/action'
-import { getWrapper as getFromStore, update } from './dataStore'
+import { getWrapper as getFromStore, update, del } from './dataStore'
 import { pushSession } from './session'
 import { parse, hasProp, clone, debug } from '../utils'
 import mainLoop from './messageListener'
@@ -84,7 +84,9 @@ export const newAction = async ({
 }
 
 const applyAction = (userAction: NAE, action: ActionRunning) =>
-  action.round === 0 ? NAE.Bet : userAction
+  action.round === 0 && (userAction === NAE.Call || userAction === NAE.Check)
+    ? NAE.Bet
+    : userAction
 
 const getPlayer = ({
   start,
@@ -178,6 +180,7 @@ const handleUpdate = async (
   const player = action.turn[userID]
   const currentStatus = clone(player.status)
   const playerAnte = player.bet
+  const turns = Object.values(action.turn)
 
   debug.action({ action, group, newAction, userID })
 
@@ -186,13 +189,24 @@ const handleUpdate = async (
     return
   }
 
-  const nextUserIndex = getPlayer({
-    start: userIndex,
-    userID,
-    group,
-    action,
-    nextIndex: current => (current + 1) % group.users.length,
-  })
+  const playersLeft = Object.entries(action.turn).filter(
+    ([, status]) => status.status !== NAE.Fold && status.status !== NAE.AllIn
+  )
+
+  const lastPlayerButNeedToRaise =
+    playersLeft.length === 1 &&
+    playersLeft[0][0] === userID &&
+    playersLeft[0][1].bet !== currentAnte
+
+  const nextUserIndex = lastPlayerButNeedToRaise
+    ? userIndex
+    : getPlayer({
+        start: userIndex,
+        userID,
+        group,
+        action,
+        nextIndex: current => (current + 1) % group.users.length,
+      })
 
   switch (userAction.type) {
     case NAE.None: {
@@ -371,9 +385,25 @@ const handleUpdate = async (
   action.button = nextUserID
 
   if (action.round === 0) {
-    if (Object.values(action.turn).every(turn => turn.status !== NAE.None)) {
+    turns.every(turn => turn.status !== NAE.None)
+
+    if (
+      turns.every(turn => turn.status !== NAE.None) &&
+      turns
+        .filter(turn => turn.status !== NAE.AllIn && turn.status !== NAE.Fold)
+        .every((turn, i, array) =>
+          array[i - 1] ? array[i - 1].bet === turn.bet : true
+        )
+    ) {
       action.round += 1
       action.button = action.big
+
+      turns
+        .filter(turn => turn.status !== NAE.AllIn && turn.status !== NAE.Fold)
+        .forEach(turn => {
+          turn.status = NAE.Bet
+        })
+
       console.log(action.id, 'should end betting round')
     }
   } else if (
@@ -407,19 +437,19 @@ const handleUpdate = async (
   }
 
   maybeEnd: if (
-    Object.values(action.turn).filter(
-      x => x.status !== NAE.Fold && x.status !== NAE.AllIn
-    ).length <= 1
+    turns.filter(x => x.status !== NAE.Fold && x.status !== NAE.AllIn).length <=
+    1
   ) {
-    if (
-      Object.values(action.turn).filter(x => x.status === NAE.AllIn).length >= 1
-    ) {
+    if (turns.filter(x => x.status === NAE.AllIn).length >= 1) {
+      if (turns.filter(x => x.status === NAE.None).length >= 1) {
+        break maybeEnd
+      }
       action.round = 4
-      console.log(action.id, 'all folded; contains all-in')
+      console.log(action.id, 'showdown; contains all-in')
       break maybeEnd
     }
 
-    console.log(action.id, `all folded; winner ${action.big}`)
+    console.log(action.id, `showdown; winner ${action.big}`)
     await handleEndRound(action, group, {
       type: NAE.Winner,
       winners: [action.big],
@@ -456,7 +486,7 @@ const findNext = (group: Group, startIndex: number, sum: number, tries = 0) => {
   return next
 }
 
-const resetAction = ({
+const resetAction = async ({
   action,
   group,
   pot = 0,
@@ -475,7 +505,27 @@ const resetAction = ({
       action.id,
       `cant find next big|small [${indexOfBig},${indexOfSmall}]`
     )
-    return
+    return false
+  }
+
+  if (indexOfBig === indexOfSmall) {
+    if (
+      group.users.filter(
+        (user, i) => i !== indexOfBig && user.sum > group.blind.big
+      ).length < 1
+    ) {
+      const winner = group.users[indexOfBig]
+      group.users = [winner]
+      group.action = undefined
+      await update(group.id, group, Type.Group)
+      await del({
+        type: Type.ActionRunning,
+        id: action.id,
+      })
+
+      console.log(action.id, 'game ended, winner:', winner)
+      return false
+    }
   }
 
   const newSmall = group.users[indexOfSmall]
@@ -502,7 +552,6 @@ const resetAction = ({
   group.users[indexOfBig].sum -= group.blind.big
 
   group.users = group.users.filter(user => user.sum > group.blind.big)
-
   action.pot = pot + group.blind.small + group.blind.big
   action.round = 0
   action.turn = turn
@@ -512,8 +561,11 @@ const resetAction = ({
   action.big = newBig.id
   action.small = newSmall.id
 
+  console.log('\n\n')
+  console.log(action.id, 'new small:', newSmall, 'new big:', newBig)
   debug.endAction({ action, group })
-  console.log(action.id, 'should have cleared')
+
+  return true
 }
 
 interface ActionRunningWithSidePot extends ActionRunning {
@@ -566,10 +618,10 @@ const handleEndRoundWithSidePot = async (
     user.sum += sum
   })
 
-  resetAction({ action, pot, group })
-
-  await update(group.id, group, Type.Group)
-  await update(action.id, action, Type.ActionRunning)
+  if (await resetAction({ action, pot, group })) {
+    await update(group.id, group, Type.Group)
+    await update(action.id, action, Type.ActionRunning)
+  }
 }
 
 const handleEndRound = async (
@@ -616,10 +668,10 @@ const handleEndRound = async (
       return
   }
 
-  resetAction({ action, pot, group })
-
-  await update(group.id, group, Type.Group)
-  await update(action.id, action, Type.ActionRunning)
+  if (await resetAction({ action, pot, group })) {
+    await update(group.id, group, Type.Group)
+    await update(action.id, action, Type.ActionRunning)
+  }
 }
 
 mainLoop(CHANNEL, async maybeMessage => {

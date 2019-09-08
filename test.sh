@@ -22,7 +22,10 @@ function header {
 }
 
 function data {
-  echo "$([ ! -z "$1" ] && echo " -H 'Content-Type: application/json' -d '$1' " || echo "")"
+  args="$(echo $@|sed 's/ //g')"
+  # >&2 echo "$args"
+  postbody=" -H 'Content-Type: application/json' -d '$(echo $args)' "
+  echo "$([ ! -z "$args" ] && echo "$postbody" || echo "")"
 }
 
 function get {
@@ -133,10 +136,10 @@ new_order="$(echo $(cat <<-EOF
  "3": "${user_1}"
 }
 EOF
-) | sed 's/ //g')"
+))"
 
 print "change order ($new_order)"
-patch "/group/${group}/order" $header_1 $new_order
+patch "/group/${group}/order" $header_1 "$new_order"
 last
 
 last|jq -c '.users | map(.id)'
@@ -221,12 +224,66 @@ post "/action/${action_id}/${group}" $header_2 '{"type":"fold"}'
 post "/action/${action_id}/${group}" $header_3 '{"type":"allIn"}'
 echo "end round 1, two went all in, 1 folded and one continued"
 
-winners="$(echo $(cat <<-EOF
+post "/action/${action_id}/${group}" $header_1 "$(echo $(cat <<-EOF
 {
  "type": "winner",
  "winners": ["${user_4}","${user_3}","${user_1}"]
 }
 EOF
-) | sed 's/ //g')"
+))"
 
-post "/action/${action_id}/${group}" $header_1 $winners
+##
+##
+print "hand #4"
+echo "round 1"
+post "/action/${action_id}/${group}" $header_2 '{"type":"raise","value":5}' # small | button
+post "/action/${action_id}/${group}" $header_3 '{"type":"raise","value":5}'
+post "/action/${action_id}/${group}" $header_4 '{"type":"raise","value":5}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"raise","value":5}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"call"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"call"}'
+post "/action/${action_id}/${group}" $header_4 '{"type":"allIn"}'
+echo "end round 1, all raised 5, one folde (pot at 95)"
+
+echo "round 2"
+post "/action/${action_id}/${group}" $header_1 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"check"}'
+echo "end round 2, nothing changed"
+
+echo "round 3"
+post "/action/${action_id}/${group}" $header_1 '{"type":"raise","value":25}'
+post "/action/${action_id}/${group}" $header_2 '{"type":"allIn"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"call"}'
+echo "end round 3, pot at 141"
+
+echo "round 4"
+post "/action/${action_id}/${group}" $header_1 '{"type":"check"}'
+post "/action/${action_id}/${group}" $header_3 '{"type":"check"}'
+echo "nothing changed, at showdown"
+
+post "/action/${action_id}/${group}" $header_1 "$(echo $(cat <<-EOF
+{
+ "type": "winner",
+ "winners": ["${user_3}","${user_1}","${user_2}","${user_4}"]
+}
+EOF
+))"
+echo "only user 3 & 1 should be left"
+
+##
+##
+print "hand #5"
+echo "round 1"
+post "/action/${action_id}/${group}" $header_3 '{"type":"allIn"}'
+post "/action/${action_id}/${group}" $header_1 '{"type":"call"}'
+echo "end of hand #5"
+
+post "/action/${action_id}/${group}" $header_1 "$(echo $(cat <<-EOF
+{
+ "type": "winner",
+ "winners": ["${user_1}","${user_3}"]
+}
+EOF
+))"
+echo "only user 1 should be left"
