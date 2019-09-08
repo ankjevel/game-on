@@ -87,7 +87,7 @@ export const isNewAction = (
     case NewActionEnum.None:
     case NewActionEnum.SittingOut:
       return isNumber(any.value) === false
-    case NewActionEnum.Draw: // draw COULD include users that went all in.
+    case NewActionEnum.Draw: // draw COULD include users that went all in
     case NewActionEnum.Winner:
       return Array.isArray(any.winners)
         ? any.winners.every(winner => checkId(winner, StoreTypes.User))

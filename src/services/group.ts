@@ -95,6 +95,8 @@ export const joinGroup = async ({
     return null
   }
 
+  console.log(id, 'user joined', userID)
+
   return await updateWrapper(
     id,
     res => res.action != null || res.users.some(user => user.id === userID),
@@ -338,10 +340,7 @@ export const startGame = async ({
 
       res.action = action.id
 
-      console.log(
-        action.id,
-        `new action: \n\t${res.users.map(user => user.id).join(', ')}`
-      )
+      console.log(action.id, 'new action', res.users.map(user => user.id))
 
       return res
     }

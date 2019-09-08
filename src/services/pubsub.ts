@@ -1,4 +1,5 @@
 import redis from '../adapters/redis'
+import { debug } from '../config'
 
 const pub = redis()
 export const subscribe = async (
@@ -14,5 +15,5 @@ export const subscribe = async (
 
 export const publish = async (channel: string, message: string) => {
   await pub.publish(channel, message)
-  console.log(`published:${channel}`, message)
+  console.info(`published:${channel}`, message)
 }

@@ -48,3 +48,7 @@ export const server = app.listen(config.express, () => {
 })
 export const io = socket(server)
 export const socketListener = listen(io)
+
+if (!config.debug) {
+  global.console.info = () => {}
+}

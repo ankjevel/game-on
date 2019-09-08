@@ -19,6 +19,8 @@ export const newUser = async ({
 
   delete user.password
 
+  console.log(user.id, 'created')
+
   return user
 }
 
@@ -98,7 +100,7 @@ export const checkAuthAndReturnUser = async ({
   }
 
   if (user == null) {
-    console.log(`missing user ${id || email}`)
+    console.info(`missing user ${id || email}`)
     return null
   }
 
