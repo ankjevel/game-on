@@ -61,6 +61,16 @@ export const register: Route = (app, auth) => {
     }
   })
 
+  app.get('/user/valid-token', auth, async ({ user }, res) => {
+    if (user == null || (await userService.validUser(user)) === false) {
+      return res.sendStatus(400)
+    }
+
+    return res.send({
+      status: 'ok',
+    })
+  })
+
   app.get('/user/group', auth, async ({ user }, res) => {
     if (user == null) {
       return res.sendStatus(400)

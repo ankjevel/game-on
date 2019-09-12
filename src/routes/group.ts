@@ -2,7 +2,6 @@ import { Route } from 'Route'
 import { isNumber, hasProp, nullOrEmpty, parse } from '../utils'
 import * as groupService from '../services/group'
 import { UserWithOutPassword, Group } from 'dataStore'
-
 const returnNumber = (input: any, prop: string): MaybeUndefined<number> => {
   return hasProp<any>(input, prop) &&
     isNumber((input as any)[prop]) &&

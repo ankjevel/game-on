@@ -114,4 +114,18 @@ export const checkAuthAndReturnUser = async ({
   return user
 }
 
+export const validUser = async (tokenUser: UserWithOutPassword) => {
+  const user = await getUser(tokenUser.id)
+
+  if (
+    user == null ||
+    user.id !== tokenUser.id ||
+    user.email !== tokenUser.email
+  ) {
+    return false
+  }
+
+  return true
+}
+
 export const getGroup = async (id: User['id']) => await getGroupForUser(id)
