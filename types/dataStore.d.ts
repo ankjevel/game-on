@@ -33,6 +33,11 @@ export interface User {
 
 export type UserWithOutPassword = Omit<User, 'password'>
 
+export type JWTUSer = UserWithOutPassword & {
+  iat: number
+  exp: number
+}
+
 export interface Group {
   id: string
   name: string
