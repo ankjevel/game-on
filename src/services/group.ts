@@ -10,13 +10,17 @@ import { clone } from '../utils'
 
 export type Order = { [order: string]: string }
 
+const getWrapper = async (id: Group['id']) => {
+  return await get<Group>({
+    id,
+    type: StoreTypes.Group,
+    check: isGroup,
+  })
+}
+
 const checkIfAlreadyInAGroup = async (id: UserWithOutPassword['id']) => {
   for (const key of await all(StoreTypes.Group)) {
-    const res = await get<Group>({
-      id: key,
-      type: StoreTypes.Group,
-      check: isGroup,
-    })
+    const res = await getWrapper(key)
 
     if (res != null && res.users.some(user => user.id === id)) {
       return true
@@ -24,6 +28,18 @@ const checkIfAlreadyInAGroup = async (id: UserWithOutPassword['id']) => {
   }
 
   return false
+}
+
+export const getGroupForUser = async (id: UserWithOutPassword['id']) => {
+  for (const key of await all(StoreTypes.Group)) {
+    const res = await getWrapper(key)
+
+    if (res != null && res.users.some(user => user.id === id)) {
+      return res
+    }
+  }
+
+  return null
 }
 
 export const newGroup = async ({
@@ -68,11 +84,7 @@ const updateWrapper = async (
   breakIfTruthy: (result: Group) => boolean,
   modify: (result: Group) => Promise<Group>
 ): Promise<MaybeNull<Group>> => {
-  const res = await get<Group>({
-    id,
-    type: StoreTypes.Group,
-    check: isGroup,
-  })
+  const res = await getWrapper(id)
 
   if (res == null || breakIfTruthy(res)) {
     return null
@@ -117,11 +129,7 @@ export const deleteGroup = async ({
 }: Pick<User, 'id'> & { userID: UserWithOutPassword['id'] }): Promise<
   MaybeNull<boolean>
 > => {
-  const res = await get<Group>({
-    id,
-    type: StoreTypes.Group,
-    check: isGroup,
-  })
+  const res = await getWrapper(id)
 
   if (
     res == null ||
@@ -303,7 +311,8 @@ export const startGame = async ({
     id,
     res => res.owner !== userID || res.users.length < 2,
     async res => {
-      const [first, smallBlind, bigBlind = first] = res.users
+      const [first, smallBlind] = res.users
+      const [, , bigBlind = first] = res.users
 
       const turn = {
         [smallBlind.id]: { bet: res.blind.small, status: NewActionEnum.None },

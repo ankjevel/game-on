@@ -8,7 +8,7 @@ const {
   jwt: { secret, expire: expiresIn },
 } = config
 
-export const register: Route = app => {
+export const register: Route = (app, auth) => {
   app.post('/user', async ({ body: { name, email, p1, p2 } }, res) => {
     if (
       nullOrEmpty(p1) ||
@@ -58,6 +58,21 @@ export const register: Route = app => {
     } catch (error) {
       console.log(error)
       res.sendStatus(401)
+    }
+  })
+
+  app.get('/user/group', auth, async ({ user }, res) => {
+    if (user == null) {
+      return res.sendStatus(400)
+    }
+
+    try {
+      const group = await userService.getGroup(user.id)
+      console.log(group)
+      res.send(group)
+    } catch (error) {
+      console.error(error)
+      return res.sendStatus(400)
     }
   })
 }

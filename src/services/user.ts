@@ -2,6 +2,7 @@ import { User, UserWithOutPassword } from 'dataStore'
 import { isUser, StoreTypes } from '../types/dataStore'
 import { create, all, get } from './dataStore'
 import { predictable } from '../adapters/encrypt'
+import { getGroupForUser } from './group'
 
 export const newUser = async ({
   name,
@@ -112,3 +113,5 @@ export const checkAuthAndReturnUser = async ({
 
   return user
 }
+
+export const getGroup = async (id: User['id']) => await getGroupForUser(id)
