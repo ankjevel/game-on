@@ -123,25 +123,6 @@ export const joinGroup = async ({
   )
 }
 
-export const deleteGroup = async ({
-  id,
-  userID,
-}: Pick<User, 'id'> & { userID: UserWithOutPassword['id'] }): Promise<
-  MaybeNull<boolean>
-> => {
-  const res = await getWrapper(id)
-
-  if (
-    res == null ||
-    res.owner !== userID ||
-    res.users.filter(user => user.id !== userID).length !== 0
-  ) {
-    return null
-  }
-
-  return await del({ id, type: StoreTypes.Group })
-}
-
 export const leaveGroup = async ({
   id,
   userID,
@@ -159,6 +140,12 @@ export const leaveGroup = async ({
       }
 
       res.users.splice(currentIndex, 1)
+
+      res.owner = res.users.length >= 1 ? res.users[0].id : userID
+
+      if (res.users.length === 0) {
+        await del({ id, type: StoreTypes.Group })
+      }
 
       return res
     }

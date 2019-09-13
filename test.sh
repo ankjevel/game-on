@@ -82,7 +82,7 @@ group=`last|jq .id|strip`
 echo $group
 
 print "user 2 join group"
-put "/group/${group}/join" $header_2
+put "/group/${group}" $header_2
 last
 
 owner=`last|jq .owner|strip`
@@ -100,7 +100,7 @@ patch "/group/${group}" $header_2 "{\"owner\":\"${user_1}\"}"
 last|jq .owner|strip
 
 print "leave group"
-delete "/group/${group}/leave" $header_2
+delete "/group/${group}" $header_2
 last|jq .status|strip
 
 print "delete group"
@@ -114,15 +114,15 @@ group_name=`last|jq .name|strip`
 group_start_sum=`last|jq .startSum`
 
 print "join new group (user 2)"
-put "/group/${group}/join" $header_2
+put "/group/${group}" $header_2
 last|jq -c '.users | map(.id)'
 
 print "join new group (user 3)"
-put "/group/${group}/join" $header_3
+put "/group/${group}" $header_3
 last|jq -c '.users | map(.id)'
 
 print "join new group (user 4)"
-put "/group/${group}/join" $header_4
+put "/group/${group}" $header_4
 last|jq -c '.users | map(.id)'
 
 user_3=`last|jq .users[2].id|strip`
@@ -139,7 +139,7 @@ EOF
 ))"
 
 print "change order ($new_order)"
-patch "/group/${group}/order" $header_1 "$new_order"
+post "/group/${group}/order" $header_1 "$new_order"
 last
 
 last|jq -c '.users | map(.id)'
@@ -153,7 +153,7 @@ patch "/group/${group}" $header_1 '{"startSum":50}'
 last|jq -c '.users[0].sum'
 
 print "start"
-put "/group/${group}/start" $header_1
+post "/group/${group}/start" $header_1
 action_id=`last|jq .action|strip`
 echo $action_id
 

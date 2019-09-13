@@ -2,50 +2,87 @@ import { verify } from 'jsonwebtoken'
 import { hasProp } from '../utils'
 import config from '../config'
 import { getGroupForUser } from '../services/group'
-import { JWTUSer } from 'dataStore'
+import { JWTUSer, Group } from 'dataStore'
+import { subscribe } from '../services/pubsub'
 
-// import { subscribe } from '../services/pubsub'
+const connections: Map<SocketIO.Socket['id'], Group['id']> = new Map()
+const rooms: Map<Group['id'], Set<SocketIO.Socket>> = new Map()
+const users: Map<
+  SocketIO.Socket['id'],
+  { id: JWTUSer['id']; name: JWTUSer['name'] }
+> = new Map()
+
+subscribe('update:group:*', event => {
+  const channel = event.channel.replace('update:', '')
+  try {
+    const message = JSON.parse(event.message)
+    const room = rooms.get(channel)
+
+    if (!room) {
+      return
+    }
+
+    for (const socket of room) {
+      socket.emit('update:group', message)
+    }
+  } catch (error) {
+    console.error(error)
+  }
+})
+
+export const join = (client: SocketIO.Socket, newRoom: Group['id']) => {
+  const room = rooms.get(newRoom)
+
+  if (room) {
+    for (const socket of room) {
+      const user = users.get(socket.id)
+      if (user == null) {
+        room.delete(socket)
+        continue
+      }
+      socket.emit('user:joined', user)
+    }
+    room.add(client)
+  } else {
+    rooms.set(newRoom, new Set([client]))
+  }
+
+  connections.set(client.id, newRoom)
+}
+
+export const leave = (client: SocketIO.Socket) => {
+  const connection = connections.get(client.id)
+  if (!connection) {
+    return
+  }
+
+  const room = rooms.get(connection)
+  if (!room) {
+    return
+  }
+
+  room.delete(client)
+
+  if (room.size === 0) {
+    rooms.delete(connection)
+  }
+
+  connections.delete(client.id)
+}
 
 export const listen = (io: SocketIO.Server) => {
-  const connections: Map<string, string> = new Map()
-  const rooms: Map<string, Set<SocketIO.Socket>> = new Map()
-
   io.on('connection', client => {
     const { id } = client
-
-    const join = (newRoom: string) => {
-      const room = rooms.get(newRoom) || new Set()
-      if (room) {
-        for (const user of room) {
-          user.emit('user:joined', id)
-        }
-        room.add(client)
-      } else {
-        rooms.set(newRoom, new Set([client]))
-      }
-      connections.set(id, newRoom)
-    }
-
-    const leave = () => {
-      const connection = connections.get(id)
-      if (!connection) {
-        return
-      }
-
-      const room = rooms.get(connection)
-      if (!room) {
-        return
-      }
-
-      room.delete(client)
-      if (room.size === 0) {
-        rooms.delete(connection)
-      }
-
-      connections.delete(id)
-    }
-
     console.log(id, 'user connected')
+
+    client.on('user:join', (token: string) => {
+      const user = verify(token, config.jwt.secret) as JWTUSer
+      users.set(id, {
+        id: user.id,
+        name: user.name,
+      })
+    })
+
     client.on(
       'group:join',
       async (
@@ -70,18 +107,18 @@ export const listen = (io: SocketIO.Server) => {
         }
 
         console.log('group:join', user.id, body.id)
-        join(body.id)
+        join(client, body.id)
       }
     )
 
     client.on('group:leave', () => {
       console.log('group:leave')
-      leave()
+      leave(client)
     })
 
     client.on('disconnect', () => {
       console.log(id, 'user disconnected')
-      leave()
+      leave(client)
     })
   })
 

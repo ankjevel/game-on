@@ -78,6 +78,7 @@ export const update = async <T extends Types>(
 
   const toSave = JSON.stringify({ ...prev, ...data })
   await client.set(id, toSave)
+  console.log('should puliish', `update:${id}`)
   await publish(`update:${id}`, toSave)
 }
 

@@ -87,7 +87,7 @@ export const register: Route = (app, auth) => {
     )
   })
 
-  app.put('/group/:id/join', auth, async ({ params: { id }, user }, res) => {
+  app.put('/group/:id', auth, async ({ params: { id }, user }, res) => {
     if (user == null || input.param(id)) {
       return res.sendStatus(400)
     }
@@ -101,34 +101,17 @@ export const register: Route = (app, auth) => {
     res.send(result)
   })
 
-  app.delete(
-    '/group/:id/leave',
-    auth,
-    async ({ params: { id }, user }, res) => {
-      if (user == null || input.param(id)) {
-        return res.sendStatus(400)
-      }
-
-      const result = await groupService.leaveGroup({ id, userID: user.id })
-      if (result == null) {
-        return res.sendStatus(400)
-      }
-
-      res.send({ status: `left "${result.name}"` })
-    }
-  )
-
   app.delete('/group/:id', auth, async ({ params: { id }, user }, res) => {
     if (user == null || input.param(id)) {
       return res.sendStatus(400)
     }
 
-    const result = await groupService.deleteGroup({ id, userID: user.id })
+    const result = await groupService.leaveGroup({ id, userID: user.id })
     if (result == null) {
       return res.sendStatus(400)
     }
 
-    res.send(result)
+    res.send({ status: `left "${result.name}"` })
   })
 
   app.patch('/group/:id', auth, async ({ params: { id }, body, user }, res) => {
@@ -153,7 +136,7 @@ export const register: Route = (app, auth) => {
     res.send(result)
   })
 
-  app.patch(
+  app.post(
     '/group/:id/order',
     auth,
     async ({ params: { id }, body, user }, res) => {
@@ -177,7 +160,7 @@ export const register: Route = (app, auth) => {
     }
   )
 
-  app.put('/group/:id/start', auth, async ({ params: { id }, user }, res) => {
+  app.post('/group/:id/start', auth, async ({ params: { id }, user }, res) => {
     if (user == null || input.param(id)) {
       return res.sendStatus(400)
     }

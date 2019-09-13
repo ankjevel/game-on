@@ -1,19 +1,24 @@
 import redis from '../adapters/redis'
-import { debug } from '../config'
 
 const pub = redis()
+
 export const subscribe = async (
-  channel: string,
-  onMessage: (message: any) => void
+  channel = '*',
+  onMessage: (message: { channel: string; message: string }) => void
 ) => {
   const sub = redis()
-  await sub.subscribe(channel)
-  sub.on('message', event => {
-    onMessage(event)
-  })
+
+  await sub.psubscribe(channel)
+
+  sub.on('pmessage', (_pattern, channel, message) =>
+    onMessage({ channel, message })
+  )
+
+  return () => sub.punsubscribe(channel)
 }
 
 export const publish = async (channel: string, message: string) => {
   await pub.publish(channel, message)
-  console.info(`published:${channel}`, message)
+
+  console.info(channel, message)
 }
