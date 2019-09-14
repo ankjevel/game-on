@@ -35,7 +35,7 @@ export const join = (client: SocketIO.Socket, newRoom: Group['id']) => {
 
   if (room) {
     for (const socket of room) {
-      const user = users.get(socket.id)
+      const user = users.get(client.id)
       if (user == null) {
         room.delete(socket)
         continue
