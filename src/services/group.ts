@@ -214,11 +214,7 @@ export const updateGroup = async ({
   return await updateWrapper(
     id,
     res => {
-      if (
-        res.action != null ||
-        res.owner !== userID ||
-        (startSum && (bigBlind || smallBlind))
-      ) {
+      if (res.action != null || res.owner !== userID) {
         return true
       }
       if (bigBlind && res.blind.big === bigBlind) {
@@ -233,31 +229,79 @@ export const updateGroup = async ({
       if (owner && res.users.find(({ id }) => id === owner) == null) {
         update.owner = false
       }
-      if (
-        startSum &&
-        (res.startSum === startSum || startSum <= res.blind.big)
-      ) {
+      if (startSum && res.startSum === startSum) {
         update.startSum = false
       }
 
       if (update.bigBlind && bigBlind) {
         const small = smallBlind ? smallBlind : res.blind.small
-        update.bigBlind = bigBlind > small && bigBlind < res.startSum
+        const start = startSum ? startSum : res.startSum
+        update.bigBlind = bigBlind > small && bigBlind < start
       }
 
       if (update.smallBlind && smallBlind) {
         const big = bigBlind ? bigBlind : res.blind.big
-        update.smallBlind = smallBlind < big && smallBlind < res.startSum
+        const start = startSum ? startSum : res.startSum
+        update.smallBlind = smallBlind < big && smallBlind < start
       }
 
-      if (update.bigBlind && update.smallBlind && bigBlind && smallBlind) {
-        if (bigBlind <= smallBlind) {
+      if (update.startSum && startSum) {
+        const big = bigBlind ? bigBlind : res.blind.big
+        update.startSum = startSum > big
+      }
+
+      if (
+        update.bigBlind &&
+        update.smallBlind &&
+        update.startSum &&
+        bigBlind &&
+        smallBlind &&
+        startSum
+      ) {
+        if (
+          bigBlind <= smallBlind ||
+          (bigBlind >= startSum || smallBlind >= startSum) ||
+          startSum <= bigBlind
+        ) {
+          update.bigBlind = false
+          update.smallBlind = false
+          update.startSum = false
+        }
+      } else if (
+        update.bigBlind &&
+        update.smallBlind &&
+        bigBlind &&
+        smallBlind
+      ) {
+        if (
+          bigBlind <= smallBlind ||
+          (bigBlind >= res.startSum || smallBlind >= res.startSum)
+        ) {
           update.bigBlind = false
           update.smallBlind = false
         }
-        if (bigBlind >= res.startSum || smallBlind >= res.startSum) {
+      } else if (update.bigBlind && update.startSum && bigBlind && startSum) {
+        if (
+          bigBlind >= startSum ||
+          bigBlind <= res.blind.small ||
+          startSum <= res.blind.small
+        ) {
           update.bigBlind = false
+          update.startSum = false
+        }
+      } else if (
+        update.smallBlind &&
+        update.startSum &&
+        smallBlind &&
+        startSum
+      ) {
+        if (
+          smallBlind <= startSum ||
+          smallBlind >= res.blind.big ||
+          startSum <= res.blind.big
+        ) {
           update.smallBlind = false
+          update.startSum = false
         }
       }
 
