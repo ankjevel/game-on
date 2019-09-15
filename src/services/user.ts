@@ -6,14 +6,12 @@ import { getGroupForUser } from './group'
 
 export const newUser = async ({
   name,
-  email,
   password,
-}: Pick<User, 'name' | 'email' | 'password'>): Promise<UserWithOutPassword> => {
+}: Pick<User, 'name' | 'password'>): Promise<UserWithOutPassword> => {
   const user = await create<User>(StoreTypes.User, id => {
     return {
       id,
       name,
-      email,
       password: `${predictable.encrypt(`${id}:${password}`)}`,
     }
   })
@@ -57,14 +55,11 @@ const checkEach = async (
   return user
 }
 
-export const checkDuplicate = async ({
-  id,
-  email,
-}: Pick<User, 'id' | 'email'>) =>
+export const checkDuplicate = async ({ id, name }: Pick<User, 'id' | 'name'>) =>
   await checkEach(
     res => {
-      if (res.email.toLowerCase() === email.toLowerCase()) {
-        throw new Error(`${res.email} taken; by ${res.id}`)
+      if (res.name.toLowerCase() === name.toLowerCase()) {
+        throw new Error(`${res.name} taken; by ${res.id}`)
       }
     },
     keys => {
@@ -83,30 +78,28 @@ const getUser = async (id: User['id']): Promise<MaybeNull<User>> =>
 
 export const checkAuthAndReturnUser = async ({
   id,
-  email,
+  name,
   password,
 }: Pick<
-  WithOptional<User, 'id' | 'email'>,
-  'id' | 'email' | 'password'
+  WithOptional<User, 'id' | 'name'>,
+  'id' | 'name' | 'password'
 >): Promise<MaybeNull<UserWithOutPassword>> => {
   let user: MaybeNull<User> = null
   if (id != null) {
     user = await getUser(id)
   }
 
-  if (email != null) {
-    user = await checkEach(
-      res => res.email.toLowerCase() === email.toLowerCase()
-    )
+  if (name != null) {
+    user = await checkEach(res => res.name.toLowerCase() === name.toLowerCase())
   }
 
   if (user == null) {
-    console.log(`missing user ${id || email}`)
+    console.log(`missing user ${id || name}`)
     return null
   }
 
   if (`${predictable.encrypt(`${user.id}:${password}`)}` !== user.password) {
-    throw new Error(`wrong password for ${user.id} [${user.email}]`)
+    throw new Error(`wrong password for ${user.id} [${user.name}]`)
   }
 
   delete user.password
@@ -120,7 +113,7 @@ export const validUser = async (tokenUser: UserWithOutPassword) => {
   if (
     user == null ||
     user.id !== tokenUser.id ||
-    user.email !== tokenUser.email
+    user.name !== tokenUser.name
   ) {
     return false
   }

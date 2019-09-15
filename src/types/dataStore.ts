@@ -1,4 +1,4 @@
-import { hasProp, looksLikeEmail, isNumber, nullOrEmpty } from '../utils'
+import { hasProp, isNumber, nullOrEmpty } from '../utils'
 import {
   Action,
   IActionRunning,
@@ -107,9 +107,7 @@ export const isUser = (any: User | unknown): any is User =>
   (hasProp<User>(any, 'id') &&
     !nullOrEmpty(any.id) &&
     checkId(any.id, StoreTypes.User)) &&
-  (hasProp(any, 'email') &&
-    !nullOrEmpty(any.email) &&
-    looksLikeEmail(any.email)) &&
+  (hasProp(any, 'name') && !nullOrEmpty(any.name)) &&
   (hasProp(any, 'password') && !nullOrEmpty(any.password))
 
 export const isUserWithOutPassword = (
@@ -119,9 +117,7 @@ export const isUserWithOutPassword = (
   (hasProp<UserWithOutPassword>(any, 'id') &&
     !nullOrEmpty(any.id) &&
     checkId(any.id, StoreTypes.User)) &&
-  (hasProp(any, 'email') &&
-    !nullOrEmpty(any.email) &&
-    looksLikeEmail(any.email))
+  (hasProp(any, 'name') && !nullOrEmpty(any.name))
 
 export const isGroup = (any: Group | unknown): any is Group =>
   any != null &&

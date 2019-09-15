@@ -19,7 +19,7 @@ export const register: Route = app => {
       const data = await dataStore.getWrapper({
         id,
         type,
-        exclude: ['email', 'password'],
+        exclude: ['password'],
       })
 
       if (data == null) {

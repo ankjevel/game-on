@@ -60,19 +60,19 @@ echo "clear redis"
 docker exec -it `docker ps --filter name="$(basename $(pwd))_redis" --format={{.ID}}` redis-cli flushall &> /dev/null
 
 echo "create user 1"
-post "/user" "" '{"name":"user_1","email":"user_1@mail.com","p1":"xxxXx_111","p2":"xxxXx_111"}'
+post "/user" "" '{"name":"user_1","p1":"xxxXx_111","p2":"xxxXx_111"}'
 header_1=`last`
 
 echo "create user 2"
-post "/user" "" '{"name":"user_2","email":"user_2@mail.com","p1":"xxxXx_222","p2":"xxxXx_222"}'
+post "/user" "" '{"name":"user_2","p1":"xxxXx_222","p2":"xxxXx_222"}'
 header_2=`last`
 
 echo "create user 3"
-post "/user" "" '{"name":"user_3","email":"user_3@mail.com","p1":"xxxXx_333","p2":"xxxXx_333"}'
+post "/user" "" '{"name":"user_3","p1":"xxxXx_333","p2":"xxxXx_333"}'
 header_3=`last`
 
 echo "create user 4"
-post "/user" "" '{"name":"user_4","email":"user_4@mail.com","p1":"xxxXx_444","p2":"xxxXx_444"}'
+post "/user" "" '{"name":"user_4","p1":"xxxXx_444","p2":"xxxXx_444"}'
 header_4=`last`
 
 

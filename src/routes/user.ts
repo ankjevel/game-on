@@ -1,6 +1,6 @@
 import { sign } from 'jsonwebtoken'
 import * as userService from '../services/user'
-import { nullOrEmpty, looksLikeEmail } from '../utils'
+import { nullOrEmpty } from '../utils'
 import config from '../config'
 import Route from 'Route'
 
@@ -9,21 +9,14 @@ const {
 } = config
 
 export const register: Route = (app, auth) => {
-  app.post('/user', async ({ body: { name, email, p1, p2 } }, res) => {
-    if (
-      nullOrEmpty(p1) ||
-      nullOrEmpty(name) ||
-      nullOrEmpty(email) ||
-      looksLikeEmail(email) === false ||
-      p1 !== p2 ||
-      p1.length < 8
-    ) {
+  app.post('/user', async ({ body: { name, p1, p2 } }, res) => {
+    if (nullOrEmpty(p1) || nullOrEmpty(name) || p1 !== p2 || p1.length < 8) {
       return res.sendStatus(400)
     }
 
     let user
     try {
-      user = await userService.newUser({ name, email, password: p1 })
+      user = await userService.newUser({ name, password: p1 })
     } catch (error) {
       console.error(error)
       return res.sendStatus(409)
@@ -35,15 +28,15 @@ export const register: Route = (app, auth) => {
     res.send(token)
   })
 
-  app.post('/user/token', async ({ body: { id, email, password } }, res) => {
-    if (nullOrEmpty(password) || (nullOrEmpty(email) && nullOrEmpty(id))) {
+  app.post('/user/token', async ({ body: { id, name, password } }, res) => {
+    if (nullOrEmpty(password) || (nullOrEmpty(name) && nullOrEmpty(id))) {
       return res.sendStatus(401)
     }
 
     try {
       const user = await userService.checkAuthAndReturnUser({
         id,
-        email,
+        name,
         password,
       })
 
