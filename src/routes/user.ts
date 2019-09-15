@@ -78,7 +78,6 @@ export const register: Route = (app, auth) => {
 
     try {
       const group = await userService.getGroup(user.id)
-      console.log(group)
       res.send(group)
     } catch (error) {
       console.error(error)

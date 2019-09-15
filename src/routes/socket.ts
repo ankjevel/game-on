@@ -2,7 +2,7 @@ import { verify } from 'jsonwebtoken'
 import { hasProp } from '../utils'
 import config from '../config'
 import { getGroupForUser } from '../services/group'
-import { JWTUSer, Group } from 'dataStore'
+import { JWTUSer, Group, User } from 'dataStore'
 import { subscribe } from '../services/pubsub'
 
 const connections: Map<SocketIO.Socket['id'], Group['id']> = new Map()
@@ -32,7 +32,6 @@ subscribe('update:group:*', event => {
 
 export const join = (client: SocketIO.Socket, newRoom: Group['id']) => {
   const room = rooms.get(newRoom)
-
   if (room) {
     for (const socket of room) {
       const user = users.get(client.id)
@@ -44,7 +43,9 @@ export const join = (client: SocketIO.Socket, newRoom: Group['id']) => {
     }
     room.add(client)
   } else {
-    rooms.set(newRoom, new Set([client]))
+    const room = rooms.get(newRoom) || new Set()
+    room.add(client)
+    rooms.set(newRoom, room)
   }
 
   connections.set(client.id, newRoom)
@@ -106,7 +107,6 @@ export const listen = (io: SocketIO.Server) => {
           return
         }
 
-        console.log('group:join', user.id, body.id)
         join(client, body.id)
       }
     )

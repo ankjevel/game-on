@@ -1,0 +1,16 @@
+version: '3.7'
+
+services:
+  api:
+    build: ../
+    environment:
+      redis__host: redis
+    networks:
+      - data
+    depends_on:
+      - redis
+    ports:
+      - 5555:5555
+
+networks:
+  data:

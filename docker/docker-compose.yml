@@ -1,0 +1,42 @@
+version: '3.7'
+
+services:
+  api_1:
+    build: ../
+    environment:
+      redis__host: redis
+    networks:
+      - data
+      - ha
+    depends_on:
+      - redis
+
+  api_2:
+    build: ../
+    environment:
+      redis__host: redis
+    networks:
+      - data
+      - ha
+    depends_on:
+      - redis
+
+  haproxy:
+    depends_on:
+      - api_1
+      - api_2
+    build:
+      context: ./docker
+      dockerfile: Docker.haproxy
+    environment:
+      API_1__HOST: api_1
+      API_2__HOST: api_2
+      API__PORT: 5555
+    networks:
+      - ha
+    ports:
+      - 5555:80
+
+networks:
+  data:
+  ha:
