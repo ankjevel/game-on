@@ -2,8 +2,10 @@ import { verify } from 'jsonwebtoken'
 import { hasProp } from '../utils'
 import config from '../config'
 import { getGroupForUser } from '../services/group'
-import { JWTUSer, Group, User } from 'dataStore'
+import { JWTUSer, Group } from 'dataStore'
 import { subscribe } from '../services/pubsub'
+import parse from '../utils/parse'
+import { ActionRunning } from '../types/dataStore'
 
 const connections: Map<SocketIO.Socket['id'], Group['id']> = new Map()
 const rooms: Map<Group['id'], Set<SocketIO.Socket>> = new Map()
@@ -15,15 +17,32 @@ const users: Map<
 subscribe('update:group:*', event => {
   const channel = event.channel.replace('update:', '')
   try {
-    const message = JSON.parse(event.message)
+    const message = parse<Group>(event.message)
     const room = rooms.get(channel)
-
     if (!room) {
       return
     }
-
     for (const socket of room) {
       socket.emit('update:group', message)
+    }
+  } catch (error) {
+    console.error(error)
+  }
+})
+
+subscribe('update:action:*', event => {
+  try {
+    const message = parse<ActionRunning>(event.message)
+    if (!message) {
+      return
+    }
+    const channel = message.groupID
+    const room = rooms.get(channel)
+    if (!room) {
+      return
+    }
+    for (const socket of room) {
+      socket.emit('update:action', message)
     }
   } catch (error) {
     console.error(error)
@@ -112,7 +131,7 @@ export const listen = (io: SocketIO.Server) => {
     )
 
     client.on('group:leave', () => {
-      console.log('group:leave')
+      console.log(id, 'group:leave')
       leave(client)
     })
 
