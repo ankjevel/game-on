@@ -517,6 +517,7 @@ const resetAction = async ({
       const winner = [group.users[indexOfBig]]
       group.users = winner
       group.action = undefined
+
       await update(group.id, group, Type.Group)
       await del({
         type: Type.ActionRunning,
@@ -560,6 +561,10 @@ const resetAction = async ({
   action.queued = {}
   action.big = newBig.id
   action.small = newSmall.id
+
+  if (group.users.some(user => user.id === group.owner) === false) {
+    group.owner = group.users[0].id
+  }
 
   console.info('\n\n')
   console.info(action.id, 'new small:', newSmall, 'new big:', newBig)
