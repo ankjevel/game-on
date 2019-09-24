@@ -602,32 +602,33 @@ const handleEndRoundWithSidePot = async (
 
   const share: Share[] = []
   action.sidePot.forEach(sidepot => {
-    const wonSidePot = (order.pop() || []).find(id => id === sidepot.id)
-
-    if (wonSidePot) {
+    if ((order[0] || []).find(id => id === sidepot.id) != null) {
       const sum = isDraw
         ? sidepot.sum
         : Math.floor((sidepot.sum - (action.pot - pot)) * winners(order))
-
       share.push({ id: sidepot.id, sum })
-
       pot -= sum
     }
-
-    order = order.filter(order => order.find(id => id !== sidepot.id))
+    order = order.filter(order => order.find(id => id === sidepot.id) == null)
   })
 
   if (order.length) {
     const shared = winners(order)
     const sum = Math.floor(pot / shared)
-    order.forEach(order => order.forEach(id => share.push({ id, sum })))
+    order.forEach(order =>
+      order.forEach(id => {
+        share.push({ id, sum })
+      })
+    )
     pot -= sum * shared
   }
 
   share.forEach(({ id, sum }) => {
     const user = group.users.find(user => user.id === id)
 
-    if (user == null) return
+    if (user == null) {
+      return
+    }
 
     user.sum += sum
   })
