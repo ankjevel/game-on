@@ -41,7 +41,7 @@ export enum NewActionEnum {
 export type NewAction = {
   type: NewActionEnum
   value?: number
-  winners?: User['id'][]
+  order?: User['id'][]
 }
 
 export type UserSummary = {
@@ -89,8 +89,8 @@ export const isNewAction = (
       return isNumber(any.value) === false
     case NewActionEnum.Draw: // draw COULD include users that went all in
     case NewActionEnum.Winner:
-      return Array.isArray(any.winners)
-        ? any.winners.every(winner => checkId(winner, StoreTypes.User))
+      return Array.isArray(any.order)
+        ? any.order.every(winner => checkId(winner, StoreTypes.User))
         : true
     default:
       return isNumber(any.value)

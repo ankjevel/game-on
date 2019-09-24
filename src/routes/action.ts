@@ -22,11 +22,11 @@ const input = {
       : undefined
   },
 
-  winners(input: NewAction): MaybeUndefined<NewAction['winners']> {
-    return hasProp(input, 'winners') &&
-      Array.isArray(input.winners) &&
-      input.winners.every(winner => checkId(winner, StoreTypes.User))
-      ? input.winners
+  order(input: NewAction): MaybeUndefined<NewAction['order']> {
+    return hasProp(input, 'order') &&
+      Array.isArray(input.order) &&
+      input.order.every(winner => checkId(winner, StoreTypes.User))
+      ? input.order
       : undefined
   },
 }
@@ -48,7 +48,7 @@ export const register: Route = (app, auth) => {
       const action = {
         type: input.type(body),
         value: input.value(body),
-        winners: input.winners(body),
+        order: input.order(body),
       }
 
       if (!isNewAction(action, true)) {

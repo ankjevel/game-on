@@ -452,7 +452,7 @@ const handleUpdate = async (
     console.info(action.id, `showdown; winner ${action.big}`)
     await handleEndRound(action, group, {
       type: NAE.Winner,
-      winners: [action.big],
+      order: [action.big],
     })
     debug.endAction({ action, group })
     return
@@ -582,37 +582,37 @@ const handleEndRoundWithSidePot = async (
   group: Group,
   newAction: Message['newAction']
 ) => {
-  if (newAction.winners == null || Array.isArray(newAction.winners) === false) {
+  if (newAction.order == null || Array.isArray(newAction.order) === false) {
     console.info(action.id, 'ending without sharing sidepot is now allowed')
     return
   }
 
+  console.log(action, group, newAction)
+
   let pot = clone(action.pot)
-  let winners = clone(newAction.winners)
+  let order = clone(newAction.order)
 
   const share: Share[] = []
 
   action.sidePot.forEach(sidepot => {
-    const wonSidePot = sidepot.id === winners[0]
+    const wonSidePot = sidepot.id === order[0]
     if (wonSidePot) {
-      const won = Math.floor(
-        (sidepot.sum - (action.pot - pot)) * winners.length
-      )
+      const won = Math.floor((sidepot.sum - (action.pot - pot)) * order.length)
       share.push({
         id: sidepot.id,
         sum: won,
       })
       pot -= won
     }
-    winners = winners.filter(id => id !== sidepot.id)
+    order = order.filter(id => id !== sidepot.id)
   })
 
-  if (winners.length) {
-    const sum = Math.floor(pot / winners.length)
-    winners.forEach(id => {
+  if (order.length) {
+    const sum = Math.floor(pot / order.length)
+    order.forEach(id => {
       share.push({ id, sum })
     })
-    pot -= sum * winners.length
+    pot -= sum * order.length
   }
 
   share.forEach(({ id, sum }) => {

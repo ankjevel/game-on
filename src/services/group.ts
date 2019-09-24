@@ -345,6 +345,10 @@ export const startGame = async ({
       const [first, smallBlind] = res.users
       const [, , bigBlind = first] = res.users
 
+      res.users.forEach(user => {
+        user.sum = res.startSum
+      })
+
       const turn = {
         [smallBlind.id]: { bet: res.blind.small, status: NewActionEnum.None },
         [bigBlind.id]: { bet: res.blind.big, status: NewActionEnum.None },

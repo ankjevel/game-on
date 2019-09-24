@@ -227,7 +227,7 @@ echo "end round 1, two went all in, 1 folded and one continued"
 post "/action/${action_id}/${group}" $header_1 "$(echo $(cat <<-EOF
 {
  "type": "winner",
- "winners": ["${user_4}","${user_3}","${user_1}"]
+ "order": ["${user_4}","${user_3}","${user_1}"]
 }
 EOF
 ))"
@@ -265,7 +265,7 @@ echo "nothing changed, at showdown"
 post "/action/${action_id}/${group}" $header_1 "$(echo $(cat <<-EOF
 {
  "type": "winner",
- "winners": ["${user_3}","${user_1}","${user_2}","${user_4}"]
+ "order": ["${user_3}","${user_1}","${user_2}","${user_4}"]
 }
 EOF
 ))"
@@ -282,7 +282,7 @@ echo "end of hand #5"
 post "/action/${action_id}/${group}" $header_1 "$(echo $(cat <<-EOF
 {
  "type": "winner",
- "winners": ["${user_1}","${user_3}"]
+ "order": ["${user_1}","${user_3}"]
 }
 EOF
 ))"
