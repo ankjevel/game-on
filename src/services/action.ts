@@ -452,7 +452,7 @@ const handleUpdate = async (
     console.info(action.id, `showdown; winner ${action.big}`)
     await handleEndRound(action, group, {
       type: NAE.Winner,
-      order: [action.big],
+      order: [[action.big]],
     })
     debug.endAction({ action, group })
     return
@@ -577,49 +577,58 @@ interface ActionRunningWithSidePot extends ActionRunning {
   sidePot: NonNullable<ActionRunning['sidePot']>
 }
 
+const winners = (order: NonNullable<NewAction['order']>) =>
+  order.reduce((sum, order) => sum + order.length, 0)
+
 const handleEndRoundWithSidePot = async (
   action: ActionRunningWithSidePot,
   group: Group,
   newAction: Message['newAction']
 ) => {
-  if (newAction.order == null || Array.isArray(newAction.order) === false) {
+  const isDraw = newAction.type === NAE.Draw
+
+  if (
+    (newAction.order == null || Array.isArray(newAction.order) === false) &&
+    !isDraw
+  ) {
     console.info(action.id, 'ending without sharing sidepot is now allowed')
     return
   }
 
-  console.log(action, group, newAction)
-
   let pot = clone(action.pot)
-  let order = clone(newAction.order)
+  let order = isDraw
+    ? [action.sidePot.map(({ id }) => id)]
+    : clone(newAction.order) || [[]]
 
   const share: Share[] = []
-
   action.sidePot.forEach(sidepot => {
-    const wonSidePot = sidepot.id === order[0]
+    const wonSidePot = (order.pop() || []).find(id => id === sidepot.id)
+
     if (wonSidePot) {
-      const won = Math.floor((sidepot.sum - (action.pot - pot)) * order.length)
-      share.push({
-        id: sidepot.id,
-        sum: won,
-      })
-      pot -= won
+      const sum = isDraw
+        ? sidepot.sum
+        : Math.floor((sidepot.sum - (action.pot - pot)) * winners(order))
+
+      share.push({ id: sidepot.id, sum })
+
+      pot -= sum
     }
-    order = order.filter(id => id !== sidepot.id)
+
+    order = order.filter(order => order.find(id => id !== sidepot.id))
   })
 
   if (order.length) {
-    const sum = Math.floor(pot / order.length)
-    order.forEach(id => {
-      share.push({ id, sum })
-    })
-    pot -= sum * order.length
+    const shared = winners(order)
+    const sum = Math.floor(pot / shared)
+    order.forEach(order => order.forEach(id => share.push({ id, sum })))
+    pot -= sum * shared
   }
 
   share.forEach(({ id, sum }) => {
     const user = group.users.find(user => user.id === id)
-    if (user == null) {
-      return
-    }
+
+    if (user == null) return
+
     user.sum += sum
   })
 

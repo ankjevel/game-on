@@ -25,7 +25,11 @@ const input = {
   order(input: NewAction): MaybeUndefined<NewAction['order']> {
     return hasProp(input, 'order') &&
       Array.isArray(input.order) &&
-      input.order.every(winner => checkId(winner, StoreTypes.User))
+      input.order.every(
+        order =>
+          Array.isArray(order) &&
+          order.every(winner => checkId(winner, StoreTypes.User))
+      )
       ? input.order
       : undefined
   },
