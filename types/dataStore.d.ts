@@ -4,8 +4,10 @@ export interface Action {
 
 export interface ActionRunning extends Action {
   /**
-   * 0: betting round
-   * 1-3: regular rounds
+   * 0: preflop
+   * 1: flop
+   * 2: turn
+   * 3: river
    * 4: showdown
    */
   round: 0 | 1 | 2 | 3 | 4
@@ -17,8 +19,16 @@ export interface ActionRunning extends Action {
   small: User['id']
   pot: number
   sittingOut?: User['id'][]
+  deck: Deck
+  communityCards: string[]
   sidePot?: { id: User['id']; sum: number }[]
 }
+
+export type Deck = Tuple<MaybeNull<string>, 52>
+/**
+ * Same as Deck, but will mutate
+ */
+export type MutableDeck = Deck
 
 export interface User {
   id: string
@@ -80,6 +90,7 @@ export type NewAction = {
 export type UserSummary = {
   bet: number
   status: NewActionEnum
+  cards?: [string, string]
 }
 
 export type Check = <T>(result: T) => boolean

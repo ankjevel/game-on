@@ -1,12 +1,14 @@
 import {
-  UserWithOutPassword,
-  Group,
-  User,
   ActionRunning,
+  Deck,
+  Group,
   Order,
+  User,
+  UserWithOutPassword,
 } from 'dataStore'
 
 import * as dataStore from './dataStore'
+import { newDeck } from './cards'
 import { clone } from '../utils'
 
 const getWrapper = async (id: Group['id']) => {
@@ -213,6 +215,7 @@ export const updateGroup = async ({
   return await updateWrapper(
     id,
     res => {
+      // I am not proud of this part
       if (res.action != null || res.owner !== userID) {
         return true
       }
@@ -341,6 +344,7 @@ export const startGame = async ({
     id,
     res => res.owner !== userID || res.users.length < 2,
     async res => {
+      const deck = newDeck() as Deck
       const [first, smallBlind] = res.users
       const [, , bigBlind = first] = res.users
 
@@ -373,6 +377,8 @@ export const startGame = async ({
         big: bigBlind.id,
         small: smallBlind.id,
         turn,
+        deck,
+        communityCards: [],
         pot: res.blind.small + res.blind.big,
         round: 0,
       }))

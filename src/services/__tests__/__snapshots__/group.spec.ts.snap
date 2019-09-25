@@ -1,0 +1,103 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`#startGame works 1`] = `
+Object {
+  "action": "action:6e002e4c-c194-42ab-aa15-f0aa6a8215e3",
+  "blind": Object {
+    "big": 4,
+    "small": 2,
+  },
+  "id": "foo",
+  "owner": "bar",
+  "startSum": 200,
+  "turn": Object {},
+  "users": Array [
+    Object {
+      "id": "bar",
+      "sum": 196,
+    },
+    Object {
+      "id": "baz",
+      "sum": 198,
+    },
+  ],
+}
+`;
+
+exports[`#startGame works 2`] = `
+Object {
+  "big": "bar",
+  "button": "baz",
+  "communityCards": Array [],
+  "deck": Array [
+    "1F0A1",
+    "1F0A2",
+    "1F0A3",
+    "1F0A4",
+    "1F0A5",
+    "1F0A6",
+    "1F0A7",
+    "1F0A8",
+    "1F0A9",
+    "1F0A10",
+    "1F0A11",
+    "1F0A12",
+    "1F0A13",
+    "1F0B1",
+    "1F0B2",
+    "1F0B3",
+    "1F0B4",
+    "1F0B5",
+    "1F0B6",
+    "1F0B7",
+    "1F0B8",
+    "1F0B9",
+    "1F0B10",
+    "1F0B11",
+    "1F0B12",
+    "1F0B13",
+    "1F0C1",
+    "1F0C2",
+    "1F0C3",
+    "1F0C4",
+    "1F0C5",
+    "1F0C6",
+    "1F0C7",
+    "1F0C8",
+    "1F0C9",
+    "1F0C10",
+    "1F0C11",
+    "1F0C12",
+    "1F0C13",
+    "1F0D1",
+    "1F0D2",
+    "1F0D3",
+    "1F0D4",
+    "1F0D5",
+    "1F0D6",
+    "1F0D7",
+    "1F0D8",
+    "1F0D9",
+    "1F0D10",
+    "1F0D11",
+    "1F0D12",
+    "1F0D13",
+  ],
+  "groupID": "foo",
+  "id": "action:6e002e4c-c194-42ab-aa15-f0aa6a8215e3",
+  "pot": 6,
+  "queued": Object {},
+  "round": 0,
+  "small": "baz",
+  "turn": Object {
+    "bar": Object {
+      "bet": 4,
+      "status": "none",
+    },
+    "baz": Object {
+      "bet": 2,
+      "status": "none",
+    },
+  },
+}
+`;

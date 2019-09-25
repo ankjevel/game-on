@@ -39,3 +39,7 @@ declare type MaybeUndefined<T> = T | undefined
 declare interface KeyValue<T> {
   [key: string]: T
 }
+
+declare type Tuple<TItem, TLength extends number> = [TItem, ...TItem[]] & {
+  length: TLength
+}

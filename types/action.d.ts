@@ -1,4 +1,4 @@
-import { ActionRunning, Group, User, NewAction } from 'dataStore'
+import { ActionRunning, Group, User, NewAction, NewActionEnum } from 'dataStore'
 
 export type Message = {
   actionID: ActionRunning['id']
@@ -18,7 +18,7 @@ export type QueryNext = {
   group: Group
   action: ActionRunning
   nextIndex: (current: number) => number
-  check?: (value: NAE) => Boolean
+  check?: (value: NewActionEnum) => Boolean
 }
 
 export type Share = {

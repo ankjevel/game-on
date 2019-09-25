@@ -263,28 +263,28 @@ post "/action/${action_id}/${group}" $header_1 '{"type":"check"}'
 post "/action/${action_id}/${group}" $header_3 '{"type":"check"}'
 echo "nothing changed, at showdown"
 
-post "/action/${action_id}/${group}" $header_1 "$(echo $(cat <<-EOF
-{
- "type": "winner",
- "order": [["${user_3}"],["${user_1}"],["${user_2}"],["${user_4}"]]
-}
-EOF
-))"
-echo "only user 3 & 1 should be left"
+# post "/action/${action_id}/${group}" $header_1 "$(echo $(cat <<-EOF
+# {
+#  "type": "winner",
+#  "order": [["${user_3}"],["${user_1}"],["${user_2}"],["${user_4}"]]
+# }
+# EOF
+# ))"
+# echo "only user 3 & 1 should be left"
 
-##
-##
-print "hand #5"
-echo "round 1"
-post "/action/${action_id}/${group}" $header_3 '{"type":"allIn"}'
-post "/action/${action_id}/${group}" $header_1 '{"type":"call"}'
-echo "end of hand #5"
+# ##
+# ##
+# print "hand #5"
+# echo "round 1"
+# post "/action/${action_id}/${group}" $header_3 '{"type":"allIn"}'
+# post "/action/${action_id}/${group}" $header_1 '{"type":"call"}'
+# echo "end of hand #5"
 
-post "/action/${action_id}/${group}" $header_1 "$(echo $(cat <<-EOF
-{
- "type": "winner",
- "order": [["${user_1}"],["${user_3}"]]
-}
-EOF
-))"
-echo "only user 1 should be left"
+# post "/action/${action_id}/${group}" $header_1 "$(echo $(cat <<-EOF
+# {
+#  "type": "winner",
+#  "order": [["${user_1}"],["${user_3}"]]
+# }
+# EOF
+# ))"
+# echo "only user 1 should be left"
