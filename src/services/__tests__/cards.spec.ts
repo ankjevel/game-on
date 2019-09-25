@@ -7,8 +7,8 @@ describe('#newDeck', () => {
 
     expect(deck).toHaveLength(52)
     expect(deck).toMatchSnapshot()
-    expect(deck[0]).toMatchInlineSnapshot(`"1F0A1"`)
-    expect(deck[deck.length - 1]).toMatchInlineSnapshot(`"1F0D13"`)
+    expect(deck[0]).toMatchInlineSnapshot(`"d1"`)
+    expect(deck[deck.length - 1]).toMatchInlineSnapshot(`"ae"`)
   })
 })
 
