@@ -6,6 +6,7 @@ import {
   ActionRunning,
   NewAction,
   UserSummary,
+  User,
 } from 'dataStore'
 
 import {
@@ -20,6 +21,7 @@ import * as dataStore from './dataStore'
 import { pushSession } from './session'
 import { parse, hasProp, clone, debug } from '../utils'
 import mainLoop from './messageListener'
+import { newDeck, takeCards } from './cards'
 
 const CHANNEL = 'message'
 
@@ -172,6 +174,7 @@ const handleUpdate = async (
   const currentStatus = clone(player.status)
   const playerAnte = player.bet
   const turns = Object.values(action.turn)
+  const round = action.round
 
   debug.action({ action, group, newAction, userID })
 
@@ -386,7 +389,7 @@ const handleUpdate = async (
           array[i - 1] ? array[i - 1].bet === turn.bet : true
         )
     ) {
-      action.round += 1
+      ++action.round
       action.button = action.big
 
       turns
@@ -450,8 +453,66 @@ const handleUpdate = async (
 
   debug.endAction({ action, group })
 
+  if (round !== action.round) {
+    maybeDealCards(action, group, round)
+  }
+
   await dataStore.update(action.id, action, 'action:running')
   await dataStore.update(group.id, group, 'group')
+}
+
+const dealCards = (
+  order: User['id'][],
+  action: ActionRunning,
+  round: number
+) => {
+  switch (round) {
+    case 1: {
+      for (const id of order) {
+        const user = action.turn[id] as { cards: string[] }
+        user.cards = takeCards(action.deck, 1) as [string]
+      }
+
+      for (const id of order) {
+        const user = action.turn[id] as { cards: string[] }
+        user.cards.push(...(takeCards(action.deck, 1) as [string]))
+      }
+
+      break
+    }
+
+    case 4:
+    case 3: {
+      action.communityCards.push(
+        ...(takeCards(action.deck, 2) as [string, string]).slice(-1)
+      )
+      break
+    }
+
+    case 2: {
+      action.communityCards.push(
+        ...(takeCards(action.deck, 4) as Tuple<string, 4>).slice(1, 4)
+      )
+      break
+    }
+  }
+}
+
+const maybeDealCards = (action: ActionRunning, group: Group, from: number) => {
+  const size = group.users.length
+  const buttonIndex = group.users.findIndex(user => user.id === action.button)
+  const usersOrderedByButton = group.users.slice(0).map(({ id }) => id)
+  usersOrderedByButton.splice(
+    0,
+    0,
+    ...usersOrderedByButton.splice(buttonIndex, size - buttonIndex).slice(0)
+  )
+
+  for (const round of [...Array(action.round - from)]
+    .map((_, ii) => action.round - (ii + 1) + 1)
+    .reverse()) {
+    dealCards(usersOrderedByButton, action, round)
+  }
 }
 
 const findNext = (group: Group, startIndex: number, sum: number, tries = 0) => {
@@ -528,24 +589,23 @@ const resetAction = async ({
         id !== newSmall.id && id !== newBig.id && sum > group.blind.big
     )
     .forEach(user => {
-      turn[user.id] = {
-        bet: 0,
-        status: 'none',
-      }
+      turn[user.id] = { bet: 0, status: 'none' }
     })
 
   group.users[indexOfSmall].sum -= group.blind.small
   group.users[indexOfBig].sum -= group.blind.big
 
-  group.users = group.users.filter(user => user.sum > group.blind.big)
-  action.pot = pot + group.blind.small + group.blind.big
-  action.round = 0
-  action.turn = turn
-  action.sidePot = undefined
-  action.button = newSmall.id
-  action.queued = {}
   action.big = newBig.id
+  action.button = newSmall.id
+  action.communityCards = []
+  action.deck = newDeck()
+  action.pot = pot + group.blind.small + group.blind.big
+  action.queued = {}
+  action.round = 0
+  action.sidePot = undefined
   action.small = newSmall.id
+  action.turn = turn
+  group.users = group.users.filter(user => user.sum > group.blind.big)
 
   if (group.users.some(user => user.id === group.owner) === false) {
     group.owner = group.users[0].id

@@ -39,14 +39,14 @@ const DECK = (['clubs', 'diamonds', 'hearts', 'spades'] as Suit[]).flatMap(
   suit => genSuit(suit)
 ) as Deck
 
-export const newDeck = () => DECK.slice(0)
+export const newDeck = () => DECK.slice(0) as Deck
 
 /**
  *
  * @param deck  Mutable parameter
  * @param take  Value between 1 and Infinity
  */
-export const takeCards = (deck: MutableDeck, take: number) => {
+export const takeCards = <T>(deck: MutableDeck, take: number): T => {
   const result: string[] = []
 
   for (const _ of Array(take).fill(undefined)) {
@@ -70,5 +70,5 @@ export const takeCards = (deck: MutableDeck, take: number) => {
     result.push(card)
   }
 
-  return result
+  return (result as unknown) as T
 }

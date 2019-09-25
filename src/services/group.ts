@@ -1,6 +1,5 @@
 import {
   ActionRunning,
-  Deck,
   Group,
   Order,
   User,
@@ -344,7 +343,7 @@ export const startGame = async ({
     id,
     res => res.owner !== userID || res.users.length < 2,
     async res => {
-      const deck = newDeck() as Deck
+      const deck = newDeck()
       const [first, smallBlind] = res.users
       const [, , bigBlind = first] = res.users
 

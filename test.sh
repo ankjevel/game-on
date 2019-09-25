@@ -266,7 +266,7 @@ echo "nothing changed, at showdown"
 # post "/action/${action_id}/${group}" $header_1 "$(echo $(cat <<-EOF
 # {
 #  "type": "winner",
-#  "order": [["${user_3}"],["${user_1}"],["${user_2}"],["${user_4}"]]
+#  "order": [["${user_3}", "${user_1}"],["${user_2}"],["${user_4}"]]
 # }
 # EOF
 # ))"
