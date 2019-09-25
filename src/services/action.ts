@@ -2,36 +2,19 @@ import {
   UserWithOutPassword,
   Action,
   Group,
-  User,
-  NewActionEnum as NAE,
+  NewActionEnum,
   ActionRunning,
   NewAction,
   UserSummary,
 } from 'dataStore'
-import { Message } from 'action'
 
-type ActionGroup = {
-  action: ActionRunning
-  group: Group
-}
-
-type QueryNext = {
-  start: number
-  userID: User['id']
-  group: Group
-  action: ActionRunning
-  nextIndex: (current: number) => number
-  check?: (value: NAE) => Boolean
-}
-
-type Share = {
-  id: User['id']
-  sum: number
-}
-
-interface ActionRunningWithSidePot extends ActionRunning {
-  sidePot: NonNullable<ActionRunning['sidePot']>
-}
+import {
+  Message,
+  ActionGroup,
+  QueryNext,
+  Share,
+  ActionRunningWithSidePot,
+} from 'action'
 
 import { checkId, isNewAction } from './dataStore'
 import { getWrapper as getFromStore, update, del } from './dataStore'
@@ -93,7 +76,7 @@ export const newAction = async ({
   await push({ actionID, userID, groupID, newAction })
 }
 
-const applyAction = (userAction: NAE, action: ActionRunning) =>
+const applyAction = (userAction: NewActionEnum, action: ActionRunning) =>
   action.round === 0 && (userAction === 'call' || userAction === 'check')
     ? 'bet'
     : userAction
