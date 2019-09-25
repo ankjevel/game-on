@@ -2,10 +2,6 @@ export interface Action {
   id: string
 }
 
-export interface KeyValue<T> {
-  [key: string]: T
-}
-
 export interface ActionRunning extends Action {
   /**
    * 0: betting round

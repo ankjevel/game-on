@@ -10,11 +10,10 @@ import {
 } from 'dataStore'
 import { Message } from 'action'
 
-import { checkId, isNewAction } from './dataStore'
-import { getWrapper as getFromStore, update, del } from './dataStore'
-import { pushSession } from './session'
-import { parse, hasProp, clone, debug } from '../utils'
-import mainLoop from './messageListener'
+type ActionGroup = {
+  action: ActionRunning
+  group: Group
+}
 
 type QueryNext = {
   start: number
@@ -29,6 +28,16 @@ type Share = {
   id: User['id']
   sum: number
 }
+
+interface ActionRunningWithSidePot extends ActionRunning {
+  sidePot: NonNullable<ActionRunning['sidePot']>
+}
+
+import { checkId, isNewAction } from './dataStore'
+import { getWrapper as getFromStore, update, del } from './dataStore'
+import { pushSession } from './session'
+import { parse, hasProp, clone, debug } from '../utils'
+import mainLoop from './messageListener'
 
 const CHANNEL = 'message'
 
@@ -462,11 +471,6 @@ const handleUpdate = async (
   await update(group.id, group, 'group')
 }
 
-type ActionGroup = {
-  action: ActionRunning
-  group: Group
-}
-
 const findNext = (group: Group, startIndex: number, sum: number, tries = 0) => {
   const max = group.users.length
 
@@ -569,10 +573,6 @@ const resetAction = async ({
   debug.endAction({ action, group })
 
   return true
-}
-
-interface ActionRunningWithSidePot extends ActionRunning {
-  sidePot: NonNullable<ActionRunning['sidePot']>
 }
 
 const winners = (order: NonNullable<NewAction['order']>) =>
