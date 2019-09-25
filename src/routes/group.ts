@@ -5,24 +5,38 @@ import * as utils from '../utils'
 import * as groupService from '../services/group'
 
 const returnNumber = (input: any, prop: string): MaybeUndefined<number> => {
-  return utils.hasProp<any>(input, prop) &&
+  const seemsValid =
+    utils.hasProp<any>(input, prop) &&
     utils.isNumber((input as any)[prop]) &&
     utils.isNumber(parseInt((input as any)[prop]))
+
+  const value = seemsValid
     ? Math.max(
         0,
         Math.min(parseInt((input as any)[prop]), Number.MAX_SAFE_INTEGER)
       )
     : undefined
+
+  return value !== 0 ? value : undefined
 }
 
 const input = {
   name(input: Group | unknown): MaybeUndefined<Group['name']> {
-    return input != null &&
+    const name =
+      input != null &&
       utils.hasProp<Group>(input, 'name') &&
       typeof input.name === 'string' &&
-      utils.nullOrEmpty(input.name) === false
-      ? input.name.substr(0, 255)
-      : undefined
+      utils.nullOrEmpty(input.name) === false &&
+      input.name
+        .substr(0, 255)
+        .trimLeft()
+        .replace(/ {1,}/g, '-')
+        .replace(/[^a-z0-9-åäö]/gi, '')
+        .replace(/-{2,}/g, '-')
+        .replace(/-$/, '')
+        .toLocaleLowerCase()
+
+    return name || undefined
   },
 
   startSum(input: Group | unknown): MaybeUndefined<Group['startSum']> {

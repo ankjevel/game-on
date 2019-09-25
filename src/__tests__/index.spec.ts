@@ -128,30 +128,64 @@ describe('/group', () => {
     }
 
     const tests: ([any, any] | [any, any, string])[] = [
-      [{}, {}],
-      [{}, {}],
-      [{ name: 'foo' }, { name: 'foo' }],
-      [{ name: '[fsffsf];;;' }, { name: '[fsffsf];;;' }],
-      [{ name: ['fsffsf'] }, {}],
-      [{ startSum: '[fsffsf];;;' }, {}],
+      [{ name: '1 foo' }, { name: '1-foo' }, 'replaces space with dash'],
+      [{ name: '2 ☺☺☺' }, { name: '2' }, 'removes emojis'],
+      [
+        { name: 'FOO--BAR--club-2' },
+        { name: 'foo-bar-club-2' },
+        'lowercase and dash',
+      ],
+      [
+        { name: ';drop table users' },
+        { name: 'drop-table-users' },
+        'limited amount of allowed characters',
+      ],
+      [
+        { name: 'hello    world' },
+        { name: 'hello-world' },
+        'removes whitespace',
+      ],
+      [{ name: ['4-fsffsf'] }, {}, 'strict string-type'],
+      [{ name: '-- ☺☺☺ --' }, {}, 'if only dash, it will be ignored'],
+      [{ startSum: '[fsffsf];;;' }, {}, 'startsum not a number'],
+      [{ startSum: '1337,8' }, {}, 'not a number'],
       [
         { startSum: 1337 },
-        { startSum: 1337, users: [{ id: user.id, sum: 1337 }] },
+        {
+          startSum: 1337,
+          users: expect.arrayContaining([
+            expect.objectContaining({
+              sum: 1337,
+            }),
+          ]),
+        },
+        'valid start sum',
       ],
       [
         { startSum: '1337' },
-        { startSum: 1337, users: [{ id: user.id, sum: 1337 }] },
+        {
+          startSum: 1337,
+          users: expect.arrayContaining([
+            expect.objectContaining({
+              sum: 1337,
+            }),
+          ]),
+        },
+        'it allows strings',
       ],
       [
         { startSum: 1337.1337 },
-        { startSum: 1337, users: [{ id: user.id, sum: 1337 }] },
+        {
+          startSum: 1337,
+          users: expect.arrayContaining([
+            expect.objectContaining({
+              sum: 1337,
+            }),
+          ]),
+        },
+        'integer, not float',
       ],
-      [
-        { startSum: 1337.8 },
-        { startSum: 1337, users: [{ id: user.id, sum: 1337 }] },
-      ],
-      [{ startSum: '1337,8' }, {}],
-      [{ startSum: -1337 }, { startSum: 0, users: [{ id: user.id, sum: 0 }] }],
+      [{ startSum: -1337 }, {}, 'ignores negative numbers'],
       [
         { startSum: Number.MAX_SAFE_INTEGER + 1337 },
         {
