@@ -1,26 +1,42 @@
-import { Suit, SuitHex, Card } from 'cards'
+import { Suit } from 'cards'
 import { MutableDeck, Deck } from 'dataStore'
 
-const getHEX = (suit: Suit): SuitHex => {
+/**
+ * Card | Suit | value
+ */
+export enum Enum {
+  Card = 0x1f000,
+  Spades = 0xa0,
+  Hearts = 0xb0,
+  Diamonds = 0xc0,
+  Clubs = 0xd0,
+}
+
+const getHEX = (suit: Suit): number => {
   switch (suit) {
     case 'clubs':
-      return '1F0A'
+      return Enum.Clubs
     case 'diamonds':
-      return '1F0B'
+      return Enum.Diamonds
     case 'hearts':
-      return '1F0C'
+      return Enum.Hearts
     case 'spades':
-      return '1F0D'
+      return Enum.Spades
     default:
       throw new Error('missing suit')
   }
 }
 
-const genCards = (hex: SuitHex) =>
-  [...new Array(13)].map((_, i) => {
-    const card = `${i + 1}` as Card
-    return `${hex}${card}`
-  }) as Tuple<string, 13>
+const genCards = (hex: number) =>
+  [...new Array(14)]
+    .map((_, i) => {
+      if (i === 10) {
+        // 10 is Jack
+        return null
+      }
+      return (hex | (i + 1)).toString(16)
+    })
+    .filter(x => x) as Tuple<string, 13>
 
 const genSuit = (suit: Suit) => {
   if (

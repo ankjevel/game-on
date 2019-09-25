@@ -14,12 +14,3 @@ export type Card =
   | '13' // K
 
 export type Suit = 'clubs' | 'diamonds' | 'hearts' | 'spades'
-
-export type SuitHex = '1F0A' | '1F0B' | '1F0C' | '1F0D'
-
-export type Suits = {
-  clubs: '1F0A'
-  diamonds: '1F0B'
-  hearts: '1F0C'
-  spades: '1F0D'
-}

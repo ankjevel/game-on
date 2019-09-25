@@ -7,10 +7,11 @@ import { nullOrEmpty, hasProp } from '../utils'
 const isActionRunning = (type: string, data: any): data is ActionRunning =>
   type === 'action' && data && hasProp(data, 'turn')
 
-export const register: Route = app => {
+export const register: Route = (app, auth) => {
   app.get(
     '/get/:id/:type',
-    async ({ params: { id, type: maybeType } }, res) => {
+    auth,
+    async ({ params: { id, type: maybeType }, user }, res) => {
       if (nullOrEmpty(id) || nullOrEmpty(maybeType)) {
         return res.sendStatus(400)
       }
@@ -35,7 +36,7 @@ export const register: Route = app => {
 
       if (isActionRunning(maybeType, data)) {
         Object.entries(data.turn).forEach(([userID, userSummary]) => {
-          if (userID === id) {
+          if (user && user.id == userID) {
             return
           }
 

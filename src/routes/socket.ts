@@ -2,7 +2,7 @@ import { ActionRunning, Group, JWTUSer } from 'dataStore'
 
 import { verify } from 'jsonwebtoken'
 
-import { hasProp } from '../utils'
+import { hasProp, clone } from '../utils'
 import config from '../config'
 import { getGroupForUser } from '../services/group'
 import { subscribe } from '../services/pubsub'
@@ -37,12 +37,29 @@ subscribe('update:action:*', event => {
     if (!message) {
       return
     }
+
+    delete message.deck
+
     const channel = message.groupID
     const room = rooms.get(channel)
     if (!room) {
       return
     }
+
+    const turn = clone(message.turn)
+
     for (const socket of room) {
+      message.turn = {}
+
+      const user = users.get(socket.id)
+
+      if (!user) continue
+
+      message.turn = clone(turn)
+      Object.entries(message.turn).forEach(([userID, userSummary]) => {
+        if (user.id === userID) return
+        delete userSummary.cards
+      })
       socket.emit('update:action', message)
     }
   } catch (error) {
