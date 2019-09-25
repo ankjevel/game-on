@@ -1,8 +1,10 @@
+import Route from 'Route'
+
 import { sign } from 'jsonwebtoken'
+
 import * as userService from '../services/user'
 import { nullOrEmpty } from '../utils'
 import config from '../config'
-import Route from 'Route'
 
 const {
   jwt: { secret, expire: expiresIn },

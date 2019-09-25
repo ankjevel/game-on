@@ -1,6 +1,7 @@
 import { ActionRunning, Group, JWTUSer } from 'dataStore'
 
 import { verify } from 'jsonwebtoken'
+
 import { hasProp } from '../utils'
 import config from '../config'
 import { getGroupForUser } from '../services/group'

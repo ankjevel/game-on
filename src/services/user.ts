@@ -1,6 +1,6 @@
 import { User, UserWithOutPassword } from 'dataStore'
 
-import { create, all, get, isUser } from './dataStore'
+import * as dataStore from './dataStore'
 import { predictable } from '../adapters/encrypt'
 import { getGroupForUser } from './group'
 
@@ -8,7 +8,7 @@ export const newUser = async ({
   name,
   password,
 }: Pick<User, 'name' | 'password'>): Promise<UserWithOutPassword> => {
-  const user = await create<User>('user', id => {
+  const user = await dataStore.create<User>('user', id => {
     return {
       id,
       name,
@@ -33,7 +33,7 @@ const checkEach = async (
   preCheck?: (input: string[]) => boolean | void
 ) => {
   let user: MaybeNull<User> = null
-  const keys = await all('user')
+  const keys = await dataStore.all('user')
 
   if (preCheck && preCheck(keys)) {
     return null
@@ -70,10 +70,10 @@ export const checkDuplicate = async ({ id, name }: Pick<User, 'id' | 'name'>) =>
   )
 
 const getUser = async (id: User['id']): Promise<MaybeNull<User>> =>
-  await get<User>({
+  await dataStore.get<User>({
     id,
     type: 'user',
-    check: isUser,
+    check: dataStore.isUser,
   })
 
 export const checkAuthAndReturnUser = async ({

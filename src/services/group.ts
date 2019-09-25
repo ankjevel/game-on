@@ -6,19 +6,19 @@ import {
   Order,
 } from 'dataStore'
 
-import { create, get, all, update, del, isGroup } from './dataStore'
+import * as dataStore from './dataStore'
 import { clone } from '../utils'
 
 const getWrapper = async (id: Group['id']) => {
-  return await get<Group>({
+  return await dataStore.get<Group>({
     id,
     type: 'group',
-    check: isGroup,
+    check: dataStore.isGroup,
   })
 }
 
 const checkIfAlreadyInAGroup = async (id: UserWithOutPassword['id']) => {
-  for (const key of await all('group')) {
+  for (const key of await dataStore.all('group')) {
     const res = await getWrapper(key)
 
     if (res != null && res.users.some(user => user.id === id)) {
@@ -30,7 +30,7 @@ const checkIfAlreadyInAGroup = async (id: UserWithOutPassword['id']) => {
 }
 
 export const getGroupForUser = async (id: UserWithOutPassword['id']) => {
-  for (const key of await all('group')) {
+  for (const key of await dataStore.all('group')) {
     const res = await getWrapper(key)
 
     if (res != null && res.users.some(user => user.id === id)) {
@@ -56,7 +56,7 @@ export const newGroup = async ({
     return null
   }
 
-  const group = await create<Group>('group', id => {
+  const group = await dataStore.create<Group>('group', id => {
     return {
       id,
       name,
@@ -91,7 +91,7 @@ const updateWrapper = async (
 
   const modified = await modify(clone(res))
 
-  await update(id, modified, 'group')
+  await dataStore.update(id, modified, 'group')
 
   return await modified
 }
@@ -143,7 +143,7 @@ export const leaveGroup = async ({
       res.owner = res.users.length >= 1 ? res.users[0].id : userID
 
       if (res.users.length === 0) {
-        await del({ id, type: 'group' })
+        await dataStore.del({ id, type: 'group' })
       }
 
       return res
@@ -365,7 +365,7 @@ export const startGame = async ({
       smallBlind.sum -= res.blind.small
       bigBlind.sum -= res.blind.big
 
-      const action = await create<ActionRunning>('action', id => ({
+      const action = await dataStore.create<ActionRunning>('action', id => ({
         id,
         groupID: res.id,
         queued: {},

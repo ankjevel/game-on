@@ -13,9 +13,9 @@ import {
 } from 'dataStore'
 
 import uuid from 'uuid'
-import { hasProp, isNumber, nullOrEmpty } from '../utils'
+
+import { hasProp, isNumber, nullOrEmpty, parse } from '../utils'
 import * as userService from './user'
-import { parse } from '../utils'
 import redis from '../adapters/redis'
 import { publish } from './pubsub'
 

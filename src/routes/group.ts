@@ -1,13 +1,13 @@
 import { Route } from 'Route'
 import { UserWithOutPassword, Group, Order } from 'dataStore'
 
-import { isNumber, hasProp, nullOrEmpty, parse } from '../utils'
+import * as utils from '../utils'
 import * as groupService from '../services/group'
 
 const returnNumber = (input: any, prop: string): MaybeUndefined<number> => {
-  return hasProp<any>(input, prop) &&
-    isNumber((input as any)[prop]) &&
-    isNumber(parseInt((input as any)[prop]))
+  return utils.hasProp<any>(input, prop) &&
+    utils.isNumber((input as any)[prop]) &&
+    utils.isNumber(parseInt((input as any)[prop]))
     ? Math.max(
         0,
         Math.min(parseInt((input as any)[prop]), Number.MAX_SAFE_INTEGER)
@@ -18,9 +18,9 @@ const returnNumber = (input: any, prop: string): MaybeUndefined<number> => {
 const input = {
   name(input: Group | unknown): MaybeUndefined<Group['name']> {
     return input != null &&
-      hasProp<Group>(input, 'name') &&
+      utils.hasProp<Group>(input, 'name') &&
       typeof input.name === 'string' &&
-      nullOrEmpty(input.name) === false
+      utils.nullOrEmpty(input.name) === false
       ? input.name.substr(0, 255)
       : undefined
   },
@@ -33,9 +33,9 @@ const input = {
     input: any | Group,
     userID: UserWithOutPassword['id']
   ): MaybeUndefined<Group['owner']> {
-    return hasProp<Group>(input, 'owner') &&
+    return utils.hasProp<Group>(input, 'owner') &&
       typeof input.owner === 'string' &&
-      nullOrEmpty(input.owner) === false &&
+      utils.nullOrEmpty(input.owner) === false &&
       userID !== input.owner
       ? input.owner
       : undefined
@@ -44,9 +44,10 @@ const input = {
   order(order?: Order): MaybeNull<Order> {
     if (
       order == null ||
-      Object.keys(order).every(key => isNumber(key)) === false ||
+      Object.keys(order).every(key => utils.isNumber(key)) === false ||
       Object.values(order).every(
-        value => !nullOrEmpty(value) && parse(value as string) == null
+        value =>
+          !utils.nullOrEmpty(value) && utils.parse(value as string) == null
       ) === false
     ) {
       return null
@@ -56,7 +57,7 @@ const input = {
   },
 
   param(param: string) {
-    return nullOrEmpty(param) || param.length > 255
+    return utils.nullOrEmpty(param) || param.length > 255
   },
 
   smallBlind(input: { smallBlind: any }) {

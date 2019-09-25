@@ -1,8 +1,8 @@
 import { StoreTypes } from 'dataStore'
+import Route from 'Route'
 
 import { getWrapper, isStoreType } from '../services/dataStore'
 import { nullOrEmpty } from '../utils'
-import Route from 'Route'
 
 export const register: Route = app => {
   app.get(

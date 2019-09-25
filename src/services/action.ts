@@ -16,8 +16,7 @@ import {
   ActionRunningWithSidePot,
 } from 'action'
 
-import { checkId, isNewAction } from './dataStore'
-import { getWrapper as getFromStore, update, del } from './dataStore'
+import * as dataStore from './dataStore'
 import { pushSession } from './session'
 import { parse, hasProp, clone, debug } from '../utils'
 import mainLoop from './messageListener'
@@ -27,10 +26,11 @@ const CHANNEL = 'message'
 const isMessage = (input: Message | any): input is Message =>
   input != null &&
   (hasProp<any>(input, 'actionID') &&
-    checkId(input.actionID, 'action:running')) &&
-  (hasProp<any>(input, 'groupID') && checkId(input.groupID, 'group')) &&
-  (hasProp<any>(input, 'userID') && checkId(input.userID, 'user')) &&
-  (hasProp<any>(input, 'newAction') && isNewAction(input.newAction))
+    dataStore.checkId(input.actionID, 'action:running')) &&
+  (hasProp<any>(input, 'groupID') &&
+    dataStore.checkId(input.groupID, 'group')) &&
+  (hasProp<any>(input, 'userID') && dataStore.checkId(input.userID, 'user')) &&
+  (hasProp<any>(input, 'newAction') && dataStore.isNewAction(input.newAction))
 
 const push = async (message: Message) => {
   if (!isMessage(message)) {
@@ -51,12 +51,12 @@ export const newAction = async ({
   userID: UserWithOutPassword['id']
   newAction: NewAction
 }) => {
-  const action = await getFromStore<ActionRunning>({
+  const action = await dataStore.getWrapper<ActionRunning>({
     id: actionID,
     type: 'action:running',
   })
 
-  const group = await getFromStore<Group>({
+  const group = await dataStore.getWrapper<Group>({
     id: groupID,
     type: 'group',
   })
@@ -450,8 +450,8 @@ const handleUpdate = async (
 
   debug.endAction({ action, group })
 
-  await update(action.id, action, 'action:running')
-  await update(group.id, group, 'group')
+  await dataStore.update(action.id, action, 'action:running')
+  await dataStore.update(group.id, group, 'group')
 }
 
 const findNext = (group: Group, startIndex: number, sum: number, tries = 0) => {
@@ -503,8 +503,8 @@ const resetAction = async ({
       group.users = winner
       group.action = undefined
 
-      await update(group.id, group, 'group')
-      await del({
+      await dataStore.update(group.id, group, 'group')
+      await dataStore.del({
         type: 'action:running',
         id: action.id,
       })
@@ -615,8 +615,8 @@ const handleEndRoundWithSidePot = async (
   })
 
   if (await resetAction({ action, pot, group })) {
-    await update(group.id, group, 'group')
-    await update(action.id, action, 'action:running')
+    await dataStore.update(group.id, group, 'group')
+    await dataStore.update(action.id, action, 'action:running')
   }
 }
 
@@ -665,8 +665,8 @@ const handleEndRound = async (
   }
 
   if (await resetAction({ action, pot, group })) {
-    await update(group.id, group, 'group')
-    await update(action.id, action, 'action:running')
+    await dataStore.update(group.id, group, 'group')
+    await dataStore.update(action.id, action, 'action:running')
   }
 }
 
@@ -677,12 +677,12 @@ mainLoop(CHANNEL, async maybeMessage => {
     return
   }
 
-  const group = await getFromStore<Group>({
+  const group = await dataStore.getWrapper<Group>({
     id: message.groupID,
     type: 'group',
   })
 
-  const action = await getFromStore<ActionRunning>({
+  const action = await dataStore.getWrapper<ActionRunning>({
     id: message.actionID,
     type: 'action:running',
   })
@@ -722,7 +722,7 @@ mainLoop(CHANNEL, async maybeMessage => {
       `storing action ${message.newAction.type} for user ${message.userID}`
     )
 
-    return await update(action.id, action, 'action:running')
+    return await dataStore.update(action.id, action, 'action:running')
   }
 
   return handleUpdate(action, group, message)
