@@ -4,10 +4,9 @@ import hasProp from './hasProp'
 import isNumber from './isNumber'
 import nullOrEmpty from './nullOrEmpty'
 import parse from './parse'
-import toEnum from './toEnum'
 import wait from './wait'
 
-export { clone, debug, hasProp, isNumber, nullOrEmpty, parse, toEnum, wait }
+export { clone, debug, hasProp, isNumber, nullOrEmpty, parse, wait }
 
 export default {
   clone,
@@ -16,6 +15,5 @@ export default {
   isNumber,
   nullOrEmpty,
   parse,
-  toEnum,
   wait,
 }

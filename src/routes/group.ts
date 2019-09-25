@@ -1,7 +1,9 @@
 import { Route } from 'Route'
+import { UserWithOutPassword, Group, Order } from 'dataStore'
+
 import { isNumber, hasProp, nullOrEmpty, parse } from '../utils'
 import * as groupService from '../services/group'
-import { UserWithOutPassword, Group } from 'dataStore'
+
 const returnNumber = (input: any, prop: string): MaybeUndefined<number> => {
   return hasProp<any>(input, prop) &&
     isNumber((input as any)[prop]) &&
@@ -39,7 +41,7 @@ const input = {
       : undefined
   },
 
-  order(order?: groupService.Order): MaybeNull<groupService.Order> {
+  order(order?: Order): MaybeNull<Order> {
     if (
       order == null ||
       Object.keys(order).every(key => isNumber(key)) === false ||

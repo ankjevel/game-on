@@ -1,5 +1,3 @@
-import * as dataStoreTypes from '../../types/dataStore'
-
 const client = {
   get: jest.fn(),
   set: jest.fn(),
@@ -13,24 +11,19 @@ import * as userService from '../user'
 jest.mock('../../adapters/redis', () => () => client)
 jest.mock('uuid', () => ({ v4: () => uuid }))
 jest.mock('../user')
-jest.mock('../../types/dataStore')
 
 import * as service from '../dataStore'
 
 let userMock: { checkDuplicate: jest.Mock }
-let dstMock: {
-  [key: string]: jest.Mock
-}
 beforeEach(() => {
   userMock = userService as any
-  dstMock = dataStoreTypes as any
 })
 
 describe('#newId', () => {
   it('returns the expected id', () => {
-    expect(service.newId(service.StoreTypes.Action)).toEqual(`action:${uuid}`)
-    expect(service.newId(service.StoreTypes.Group)).toEqual(`group:${uuid}`)
-    expect(service.newId(service.StoreTypes.User)).toEqual(`user:${uuid}`)
+    expect(service.newId('action')).toEqual(`action:${uuid}`)
+    expect(service.newId('group')).toEqual(`group:${uuid}`)
+    expect(service.newId('user')).toEqual(`user:${uuid}`)
   })
 })
 
@@ -44,22 +37,26 @@ describe('#stripTag', () => {
 
 describe('#checkDuplicate', () => {
   it('calls the correct function to check for duplicates', async () => {
+    const isAction = jest.spyOn(service, 'isAction')
+    const isGroup = jest.spyOn(service, 'isGroup')
+    const isUser = jest.spyOn(service, 'isUser')
+
     const input = 'foo' as any
 
-    dstMock.isAction.mockReturnValueOnce(true)
+    isAction.mockReturnValueOnce(true)
 
     expect(await service.checkDuplicate(input)).toBeUndefined()
     // should call duplicate on action
 
-    dstMock.isAction.mockReturnValueOnce(false)
-    dstMock.isGroup.mockReturnValueOnce(true)
+    isAction.mockReturnValueOnce(false)
+    isGroup.mockReturnValueOnce(true)
 
     expect(await service.checkDuplicate(input)).toBeUndefined()
     // should call duplicate on group
 
-    dstMock.isAction.mockReturnValueOnce(false)
-    dstMock.isGroup.mockReturnValueOnce(false)
-    dstMock.isUser.mockReturnValueOnce(true)
+    isAction.mockReturnValueOnce(false)
+    isGroup.mockReturnValueOnce(false)
+    isUser.mockReturnValueOnce(true)
 
     userMock.checkDuplicate.mockReturnValueOnce(true)
 
@@ -86,13 +83,13 @@ describe('#all', () => {
       return []
     })
 
-    expect(await service.all(service.StoreTypes.Action)).toEqual(['action'])
+    expect(await service.all('action')).toEqual(['action'])
     expect(client.keys).lastCalledWith('action:*')
 
-    expect(await service.all(service.StoreTypes.Group)).toEqual(['group'])
+    expect(await service.all('group')).toEqual(['group'])
     expect(client.keys).lastCalledWith('group:*')
 
-    expect(await service.all(service.StoreTypes.User)).toEqual(['user'])
+    expect(await service.all('user')).toEqual(['user'])
     expect(client.keys).lastCalledWith('user:*')
   })
 })

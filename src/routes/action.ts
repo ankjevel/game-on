@@ -1,17 +1,13 @@
+import { NewAction } from 'dataStore'
 import Route from 'Route'
-import { nullOrEmpty, hasProp, isNumber, toEnum } from '../utils'
+
+import { nullOrEmpty, hasProp, isNumber } from '../utils'
 import * as actionService from '../services/action'
-import {
-  NewAction,
-  NewActionEnum,
-  isNewAction,
-  checkId,
-  StoreTypes,
-} from '../types/dataStore'
+import { isNewAction, isNewActionType, checkId } from '../services/dataStore'
 
 const input = {
   type(input: NewAction): MaybeUndefined<NewAction['type']> {
-    return hasProp(input, 'type') && toEnum(input.type, NewActionEnum) != null
+    return hasProp(input, 'type') && isNewActionType(input.type)
       ? input.type
       : undefined
   },
@@ -27,8 +23,7 @@ const input = {
       Array.isArray(input.order) &&
       input.order.every(
         order =>
-          Array.isArray(order) &&
-          order.every(winner => checkId(winner, StoreTypes.User))
+          Array.isArray(order) && order.every(winner => checkId(winner, 'user'))
       )
       ? input.order
       : undefined

@@ -1,9 +1,11 @@
+import Route from 'Route'
+
 import { Application, RequestHandler } from 'express'
 import { readdirSync, lstatSync } from 'fs'
 import { join, basename } from 'path'
+
 import { packageJSON } from '../config'
-import { isUserWithOutPassword } from '../types/dataStore'
-import Route from 'Route'
+import { isUserWithOutPassword } from '../services/dataStore'
 
 export const requireAuth: RequestHandler = (req, res, next) => {
   if (!isUserWithOutPassword(req.user)) {

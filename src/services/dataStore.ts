@@ -1,30 +1,28 @@
-type Check = <T>(result: T) => boolean
+import {
+  Action,
+  ActionRunning,
+  Check,
+  Group,
+  KeyValue,
+  NewAction,
+  NewActionEnum,
+  StoreTypes,
+  Types,
+  User,
+  UserSummary,
+  UserWithOutPassword,
+} from 'dataStore'
 
 import uuid from 'uuid'
+import { hasProp, isNumber, nullOrEmpty } from '../utils'
 import * as userService from './user'
 import { parse } from '../utils'
 import redis from '../adapters/redis'
 import { publish } from './pubsub'
 
-import {
-  Action,
-  GetResult,
-  Group,
-  isAction,
-  isActionRunning,
-  isGroup,
-  isUser,
-  StoreTypes,
-  Types,
-  User,
-} from '../types/dataStore'
-
-export { Action, GetResult, Group, StoreTypes, Types, User, Check }
-
 const client = redis()
 
 export const newId = (type: StoreTypes) => `${type.split(':')[0]}:${uuid.v4()}`
-
 export const stripTag = (input: string) => input.split(':')[1] || ''
 
 export const checkDuplicate = async <T extends Types>(input: T) => {
@@ -163,16 +161,16 @@ export const getWrapper = async <T extends Types>({
   let check: Check
 
   switch (type) {
-    case StoreTypes.Action:
+    case 'action':
       check = isAction
       break
-    case StoreTypes.ActionRunning:
+    case 'action:running':
       check = isActionRunning
       break
-    case StoreTypes.Group:
+    case 'group':
       check = isGroup
       break
-    case StoreTypes.User:
+    case 'user':
       check = isUser
       break
     default:
@@ -190,3 +188,159 @@ export const getWrapper = async <T extends Types>({
 
   return res
 }
+
+export const isUserSummary = (any: any): any is UserSummary =>
+  any != null &&
+  hasProp<any>(any, 'bet') &&
+  isNumber(any.bet) &&
+  hasProp<any>(any, 'status') &&
+  isNewActionType((any as any).status)
+
+export const isStoreType = (any: any): any is StoreTypes => {
+  switch (any as StoreTypes) {
+    case 'action':
+    case 'action:running':
+    case 'group':
+    case 'user':
+      return true
+    default:
+      return false
+  }
+}
+
+export const isNewActionType = (any: any): any is NewActionEnum => {
+  switch (any) {
+    case 'allIn':
+    case 'back':
+    case 'bank':
+    case 'bet':
+    case 'call':
+    case 'check':
+    case 'draw':
+    case 'fold':
+    case 'join':
+    case 'leave':
+    case 'none':
+    case 'raise':
+    case 'sittingOut':
+    case 'winner':
+      return true
+    default:
+      return false
+  }
+}
+
+export const isNewAction = (
+  any: NewAction | unknown,
+  strict = false
+): any is NewAction => {
+  if (
+    !hasProp<NewAction>(any, 'type') ||
+    !isNewActionType((any as any).type) ||
+    (hasProp<NewAction>(any, 'value') && any.value != null
+      ? !isNumber((any as any).value)
+      : false)
+  ) {
+    return false
+  }
+
+  if (!strict) {
+    return true
+  }
+
+  switch (any.type) {
+    case 'allIn':
+    case 'back':
+    case 'bet':
+    case 'call':
+    case 'check':
+    case 'fold':
+    case 'none':
+    case 'sittingOut':
+      return isNumber(any.value) === false
+    case 'draw':
+    case 'winner':
+      return Array.isArray(any.order)
+        ? any.order.every(order =>
+            order.every(winner => checkId(winner, 'user'))
+          )
+        : true
+    default:
+      return isNumber(any.value)
+  }
+}
+
+export const checkId = (input: string, type: StoreTypes) =>
+  input.split(':')[0] === type.split(':')[0]
+
+export const isUser = (any: User | unknown): any is User =>
+  any != null &&
+  (hasProp<User>(any, 'id') &&
+    !nullOrEmpty(any.id) &&
+    checkId(any.id, 'user')) &&
+  (hasProp(any, 'name') && !nullOrEmpty(any.name)) &&
+  (hasProp(any, 'password') && !nullOrEmpty(any.password))
+
+export const isUserWithOutPassword = (
+  any: UserWithOutPassword | unknown
+): any is UserWithOutPassword =>
+  any != null &&
+  (hasProp<UserWithOutPassword>(any, 'id') &&
+    !nullOrEmpty(any.id) &&
+    checkId(any.id, 'user')) &&
+  (hasProp(any, 'name') && !nullOrEmpty(any.name))
+
+export const isGroup = (any: Group | unknown): any is Group =>
+  any != null &&
+  (hasProp<Group>(any, 'id') &&
+    typeof any.id === 'string' &&
+    !nullOrEmpty(any.id) &&
+    checkId(any.id, 'group')) &&
+  (hasProp(any, 'name') &&
+    typeof any.name === 'string' &&
+    !nullOrEmpty(any.name)) &&
+  (hasProp(any, 'owner') &&
+    typeof any.owner === 'string' &&
+    !nullOrEmpty(any.owner)) &&
+  (hasProp(any, 'startSum') && isNumber(any.startSum)) &&
+  (hasProp(any, 'users')
+    ? Array.isArray(any.users) &&
+      (any.users as Group['users']).every(
+        ({ id, sum }) => checkId(id, 'user') && isNumber(sum)
+      )
+    : true) &&
+  (hasProp(any, 'action')
+    ? typeof any.action === 'string' && checkId(any.action, 'action')
+    : true)
+
+export const isAction = (any: Action | unknown): any is Action =>
+  any != null &&
+  hasProp<Action>(any, 'id') &&
+  typeof any.id === 'string' &&
+  checkId(any.id, 'action')
+
+export const isTurn = (
+  any: KeyValue<NewActionEnum> | unknown
+): any is KeyValue<NewActionEnum> =>
+  any != null &&
+  Object.entries(any as any).every(
+    ([key, value]) => checkId(key, 'user') && isNewAction(value)
+  )
+
+export const isActionRunning = (
+  any: ActionRunning | unknown
+): any is ActionRunning =>
+  isAction(any) &&
+  (hasProp<ActionRunning>(any, 'round') && isNumber(any.round)) &&
+  (hasProp(any, 'groupID') && checkId(any.groupID, 'group')) &&
+  (hasProp(any, 'queued') && isTurn(any.queued)) &&
+  (hasProp(any, 'turn') &&
+    Object.entries(any.turn).every(
+      ([key, value]) => checkId(key, 'user') && isUserSummary(value)
+    )) &&
+  (hasProp(any, 'button') && checkId(any.button, 'user')) &&
+  (hasProp(any, 'big') && checkId(any.big, 'user')) &&
+  (hasProp(any, 'pot') && isNumber(any.round)) &&
+  (Array.isArray(any.sittingOut)
+    ? any.sittingOut.every(user => checkId(user, 'user'))
+    : true)

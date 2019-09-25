@@ -1,25 +1,24 @@
-import { UserWithOutPassword, Group, User } from 'dataStore'
-import { create, get, all, update, del } from './dataStore'
 import {
-  StoreTypes,
-  isGroup,
+  UserWithOutPassword,
+  Group,
+  User,
   ActionRunning,
-  NewActionEnum,
-} from '../types/dataStore'
-import { clone } from '../utils'
+  Order,
+} from 'dataStore'
 
-export type Order = { [order: string]: string }
+import { create, get, all, update, del, isGroup } from './dataStore'
+import { clone } from '../utils'
 
 const getWrapper = async (id: Group['id']) => {
   return await get<Group>({
     id,
-    type: StoreTypes.Group,
+    type: 'group',
     check: isGroup,
   })
 }
 
 const checkIfAlreadyInAGroup = async (id: UserWithOutPassword['id']) => {
-  for (const key of await all(StoreTypes.Group)) {
+  for (const key of await all('group')) {
     const res = await getWrapper(key)
 
     if (res != null && res.users.some(user => user.id === id)) {
@@ -31,7 +30,7 @@ const checkIfAlreadyInAGroup = async (id: UserWithOutPassword['id']) => {
 }
 
 export const getGroupForUser = async (id: UserWithOutPassword['id']) => {
-  for (const key of await all(StoreTypes.Group)) {
+  for (const key of await all('group')) {
     const res = await getWrapper(key)
 
     if (res != null && res.users.some(user => user.id === id)) {
@@ -57,7 +56,7 @@ export const newGroup = async ({
     return null
   }
 
-  const group = await create<Group>(StoreTypes.Group, id => {
+  const group = await create<Group>('group', id => {
     return {
       id,
       name,
@@ -92,7 +91,7 @@ const updateWrapper = async (
 
   const modified = await modify(clone(res))
 
-  await update(id, modified, StoreTypes.Group)
+  await update(id, modified, 'group')
 
   return await modified
 }
@@ -144,7 +143,7 @@ export const leaveGroup = async ({
       res.owner = res.users.length >= 1 ? res.users[0].id : userID
 
       if (res.users.length === 0) {
-        await del({ id, type: StoreTypes.Group })
+        await del({ id, type: 'group' })
       }
 
       return res
@@ -349,9 +348,9 @@ export const startGame = async ({
         user.sum = res.startSum
       })
 
-      const turn = {
-        [smallBlind.id]: { bet: res.blind.small, status: NewActionEnum.None },
-        [bigBlind.id]: { bet: res.blind.big, status: NewActionEnum.None },
+      const turn: ActionRunning['turn'] = {
+        [smallBlind.id]: { bet: res.blind.small, status: 'none' },
+        [bigBlind.id]: { bet: res.blind.big, status: 'none' },
       }
 
       res.users
@@ -359,14 +358,14 @@ export const startGame = async ({
         .forEach(user => {
           turn[user.id] = {
             bet: 0,
-            status: NewActionEnum.None,
+            status: 'none',
           }
         })
 
       smallBlind.sum -= res.blind.small
       bigBlind.sum -= res.blind.big
 
-      const action = await create<ActionRunning>(StoreTypes.Action, id => ({
+      const action = await create<ActionRunning>('action', id => ({
         id,
         groupID: res.id,
         queued: {},

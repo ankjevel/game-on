@@ -1,11 +1,11 @@
+import { ActionRunning, Group, JWTUSer } from 'dataStore'
+
 import { verify } from 'jsonwebtoken'
 import { hasProp } from '../utils'
 import config from '../config'
 import { getGroupForUser } from '../services/group'
-import { JWTUSer, Group } from 'dataStore'
 import { subscribe } from '../services/pubsub'
 import parse from '../utils/parse'
-import { ActionRunning } from '../types/dataStore'
 
 const connections: Map<SocketIO.Socket['id'], Group['id']> = new Map()
 const rooms: Map<Group['id'], Set<SocketIO.Socket>> = new Map()

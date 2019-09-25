@@ -1,6 +1,5 @@
 import supertest from 'supertest'
 import * as dataStore from '../services/dataStore'
-import { isUserWithOutPassword } from '../types/dataStore'
 
 jest.mock('../config', () => ({
   express: {
@@ -31,24 +30,23 @@ const jwtMock = (req, _res, next) => {
 jest.mock('express-jwt', () => () => jwtMock)
 jest.mock('ioredis')
 jest.mock('../services/dataStore')
-jest.mock('../types/dataStore')
 jest.mock('../routes/socket')
 
 import app, { server } from '../index'
 
 let errorMock: jest.Mock
 let logMock: jest.Mock
-let isUserWithOutPasswordMock: jest.Mock
+let isUserWithOutPassword
 let dataStoreMock: {
   [key: string]: jest.Mock
 }
 beforeEach(() => {
+  isUserWithOutPassword = jest.spyOn(dataStore, 'isUserWithOutPassword')
   errorMock = jest.fn()
   logMock = jest.fn()
 
   console.error = errorMock
   console.log = logMock
-  isUserWithOutPasswordMock = (isUserWithOutPassword as unknown) as jest.Mock
   dataStoreMock = (dataStore as unknown) as any
 
   user = { id: 'foo' }
@@ -85,11 +83,11 @@ describe('/favicon.ico', () => {
 
 describe('/group', () => {
   beforeEach(() => {
-    isUserWithOutPasswordMock.mockReturnValue(true)
+    isUserWithOutPassword.mockReturnValue(true)
   })
 
   it('requires a valid token', async () => {
-    isUserWithOutPasswordMock.mockReturnValue(false)
+    isUserWithOutPassword.mockReturnValue(false)
 
     await supertest(app)
       .post('/group')
@@ -97,7 +95,7 @@ describe('/group', () => {
       .expect(401)
 
     user = null
-    isUserWithOutPasswordMock.mockReturnValue(true)
+    isUserWithOutPassword.mockReturnValue(true)
 
     await supertest(app)
       .post('/group')
@@ -176,7 +174,7 @@ describe('/group', () => {
         .expect(200)
 
       expect(dataStore.create, message).lastCalledWith(
-        dataStore.StoreTypes.Group,
+        'group',
         expect.any(Function)
       )
 

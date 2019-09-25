@@ -1,6 +1,7 @@
-import * as dataStore from '../services/dataStore'
-import { StoreTypes } from '../types/dataStore'
-import { toEnum, nullOrEmpty } from '../utils'
+import { StoreTypes } from 'dataStore'
+
+import { getWrapper, isStoreType } from '../services/dataStore'
+import { nullOrEmpty } from '../utils'
 import Route from 'Route'
 
 export const register: Route = app => {
@@ -11,12 +12,15 @@ export const register: Route = app => {
         return res.sendStatus(400)
       }
 
-      const type = toEnum<StoreTypes>(maybeType, StoreTypes)
+      const type: MaybeNull<StoreTypes> = isStoreType(maybeType)
+        ? maybeType
+        : null
+
       if (type == null) {
         return res.sendStatus(400)
       }
 
-      const data = await dataStore.getWrapper({
+      const data = await getWrapper({
         id,
         type,
         exclude: ['password'],

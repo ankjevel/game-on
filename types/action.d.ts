@@ -1,4 +1,4 @@
-import { ActionRunning, Group, User, NewAction } from './dataStore'
+import { ActionRunning, Group, User, NewAction } from 'dataStore'
 
 export type Message = {
   actionID: ActionRunning['id']

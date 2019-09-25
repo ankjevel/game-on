@@ -1,15 +1,16 @@
-import { UserWithOutPassword, Action, Group, User } from 'dataStore'
 import {
-  StoreTypes as Type,
+  UserWithOutPassword,
+  Action,
+  Group,
+  User,
+  NewActionEnum as NAE,
   ActionRunning,
   NewAction,
-  checkId,
-  isNewAction,
-  NewActionEnum as NAE,
-  NewActionEnum,
   UserSummary,
-} from '../types/dataStore'
-import { Message } from '../types/action'
+} from 'dataStore'
+import { Message } from 'action'
+
+import { checkId, isNewAction } from './dataStore'
 import { getWrapper as getFromStore, update, del } from './dataStore'
 import { pushSession } from './session'
 import { parse, hasProp, clone, debug } from '../utils'
@@ -34,9 +35,9 @@ const CHANNEL = 'message'
 const isMessage = (input: Message | any): input is Message =>
   input != null &&
   (hasProp<any>(input, 'actionID') &&
-    checkId(input.actionID, Type.ActionRunning)) &&
-  (hasProp<any>(input, 'groupID') && checkId(input.groupID, Type.Group)) &&
-  (hasProp<any>(input, 'userID') && checkId(input.userID, Type.User)) &&
+    checkId(input.actionID, 'action:running')) &&
+  (hasProp<any>(input, 'groupID') && checkId(input.groupID, 'group')) &&
+  (hasProp<any>(input, 'userID') && checkId(input.userID, 'user')) &&
   (hasProp<any>(input, 'newAction') && isNewAction(input.newAction))
 
 const push = async (message: Message) => {
@@ -60,12 +61,12 @@ export const newAction = async ({
 }) => {
   const action = await getFromStore<ActionRunning>({
     id: actionID,
-    type: Type.ActionRunning,
+    type: 'action:running',
   })
 
   const group = await getFromStore<Group>({
     id: groupID,
-    type: Type.Group,
+    type: 'group',
   })
 
   if (
@@ -75,7 +76,7 @@ export const newAction = async ({
     group.action !== action.id ||
     (action.round === 4 &&
       group.owner !== userID &&
-      (newAction.type !== NAE.Winner && newAction.type !== NAE.Draw))
+      (newAction.type !== 'winner' && newAction.type !== 'draw'))
   ) {
     return
   }
@@ -84,8 +85,8 @@ export const newAction = async ({
 }
 
 const applyAction = (userAction: NAE, action: ActionRunning) =>
-  action.round === 0 && (userAction === NAE.Call || userAction === NAE.Check)
-    ? NAE.Bet
+  action.round === 0 && (userAction === 'call' || userAction === 'check')
+    ? 'bet'
     : userAction
 
 const getPlayer = ({
@@ -123,9 +124,7 @@ const getPlayer = ({
 
     const { status } = action.turn[user.id]
     if (
-      check == null
-        ? status !== NAE.Fold && status !== NAE.AllIn
-        : check(status)
+      check == null ? status !== 'fold' && status !== 'allIn' : check(status)
     ) {
       run = false
       break // found user
@@ -172,7 +171,7 @@ const handleUpdate = async (
   const isBig = userID === currentBig
   const currentAnte = action.turn[action.big].bet
   const userAction =
-    newAction.type === NAE.None && action.queued[userID]
+    newAction.type === 'none' && action.queued[userID]
       ? action.queued[userID]
       : newAction
   const userIndex = group.users.findIndex(({ id }) => id === userID)
@@ -190,7 +189,7 @@ const handleUpdate = async (
   }
 
   const playersLeft = Object.entries(action.turn).filter(
-    ([, status]) => status.status !== NAE.Fold && status.status !== NAE.AllIn
+    ([, status]) => status.status !== 'fold' && status.status !== 'allIn'
   )
 
   const lastPlayerButNeedToRaise =
@@ -209,13 +208,13 @@ const handleUpdate = async (
       })
 
   switch (userAction.type) {
-    case NAE.None: {
+    case 'none': {
       console.info(action.id, 'no stored actions')
       return
     }
 
-    case NAE.Bet: {
-      if (player.status !== NAE.None) {
+    case 'bet': {
+      if (player.status !== 'none') {
         console.info(action.id, 'bet is only used in start of round')
         return
       }
@@ -232,11 +231,11 @@ const handleUpdate = async (
         return
       }
 
-      player.status = NAE.Bet
+      player.status = 'bet'
       break
     }
 
-    case NAE.Call: {
+    case 'call': {
       if (
         !raisePot({
           currentAnte,
@@ -249,11 +248,11 @@ const handleUpdate = async (
         return
       }
 
-      player.status = applyAction(NAE.Call, action)
+      player.status = applyAction('call', action)
       break
     }
 
-    case NAE.Raise: {
+    case 'raise': {
       if (userAction.value == null) {
         console.info(action.id, 'nothing raised')
         return
@@ -273,16 +272,16 @@ const handleUpdate = async (
       }
 
       action.big = userID
-      player.status = applyAction(NAE.Raise, action)
+      player.status = applyAction('raise', action)
       break
     }
 
-    case NAE.Fold: {
+    case 'fold': {
       if (
         // edge case, where small blind folds in betting round
         action.round === 0 &&
         action.small === userID &&
-        player.status === NAE.None
+        player.status === 'none'
       ) {
         if (nextUserIndex == null || group.users[nextUserIndex] == null) {
           console.info(action.id, 'cant fold if no one else is in game :(')
@@ -299,7 +298,7 @@ const handleUpdate = async (
           group,
           action,
           nextIndex: current => (current + 1) % group.users.length,
-          check: type => [NAE.Bet, NAE.Call, NAE.Check].includes(type),
+          check: type => ['bet', 'call', 'check'].includes(type),
         })
 
         console.info(action.id, 'handle edgecase where BIG folds')
@@ -311,11 +310,11 @@ const handleUpdate = async (
         }
       }
 
-      player.status = NAE.Fold
+      player.status = 'fold'
       break
     }
 
-    case NAE.Check: {
+    case 'check': {
       if (!isBig) {
         const previousUserIndex = getPlayer({
           start: userIndex,
@@ -346,16 +345,16 @@ const handleUpdate = async (
         }
       }
 
-      player.status = applyAction(NAE.Check, action)
+      player.status = applyAction('check', action)
       break
     }
 
-    case NAE.AllIn: {
+    case 'allIn': {
       const bet = player.bet + user.sum
 
       player.bet = bet
       action.pot += user.sum
-      player.status = NAE.AllIn
+      player.status = 'allIn'
       user.sum = 0
 
       if (action.sidePot == null) {
@@ -385,12 +384,12 @@ const handleUpdate = async (
   action.button = nextUserID
 
   if (action.round === 0) {
-    turns.every(turn => turn.status !== NAE.None)
+    turns.every(turn => turn.status !== 'none')
 
     if (
-      turns.every(turn => turn.status !== NAE.None) &&
+      turns.every(turn => turn.status !== 'none') &&
       turns
-        .filter(turn => turn.status !== NAE.AllIn && turn.status !== NAE.Fold)
+        .filter(turn => turn.status !== 'allIn' && turn.status !== 'fold')
         .every((turn, i, array) =>
           array[i - 1] ? array[i - 1].bet === turn.bet : true
         )
@@ -399,16 +398,16 @@ const handleUpdate = async (
       action.button = action.big
 
       turns
-        .filter(turn => turn.status !== NAE.AllIn && turn.status !== NAE.Fold)
+        .filter(turn => turn.status !== 'allIn' && turn.status !== 'fold')
         .forEach(turn => {
-          turn.status = NAE.Bet
+          turn.status = 'bet'
         })
 
       console.info(action.id, 'should end betting round')
     }
   } else if (
-    userAction.type !== NAE.Raise &&
-    (userAction.type !== NAE.AllIn && action.big !== userID) &&
+    userAction.type !== 'raise' &&
+    (userAction.type !== 'allIn' && action.big !== userID) &&
     nextUserID === currentBig
   ) {
     ++action.round
@@ -427,9 +426,9 @@ const handleUpdate = async (
     // again, small becomes the big in first round
     action.round === 0 &&
     action.small === userID &&
-    currentStatus === NAE.None &&
+    currentStatus === 'none' &&
     // edge case where small folds at beginning of game
-    player.status !== NAE.Fold &&
+    player.status !== 'fold' &&
     action.big !== userID
   ) {
     console.info(action.id, 'set BIG <- SMALL')
@@ -437,11 +436,10 @@ const handleUpdate = async (
   }
 
   maybeEnd: if (
-    turns.filter(x => x.status !== NAE.Fold && x.status !== NAE.AllIn).length <=
-    1
+    turns.filter(x => x.status !== 'fold' && x.status !== 'allIn').length <= 1
   ) {
-    if (turns.filter(x => x.status === NAE.AllIn).length >= 1) {
-      if (turns.filter(x => x.status === NAE.None).length >= 1) {
+    if (turns.filter(x => x.status === 'allIn').length >= 1) {
+      if (turns.filter(x => x.status === 'none').length >= 1) {
         break maybeEnd
       }
       action.round = 4
@@ -451,7 +449,7 @@ const handleUpdate = async (
 
     console.info(action.id, `showdown; winner ${action.big}`)
     await handleEndRound(action, group, {
-      type: NAE.Winner,
+      type: 'winner',
       order: [[action.big]],
     })
     debug.endAction({ action, group })
@@ -460,8 +458,8 @@ const handleUpdate = async (
 
   debug.endAction({ action, group })
 
-  await update(action.id, action, Type.ActionRunning)
-  await update(group.id, group, Type.Group)
+  await update(action.id, action, 'action:running')
+  await update(group.id, group, 'group')
 }
 
 type ActionGroup = {
@@ -518,9 +516,9 @@ const resetAction = async ({
       group.users = winner
       group.action = undefined
 
-      await update(group.id, group, Type.Group)
+      await update(group.id, group, 'group')
       await del({
-        type: Type.ActionRunning,
+        type: 'action:running',
         id: action.id,
       })
 
@@ -532,9 +530,9 @@ const resetAction = async ({
   const newSmall = group.users[indexOfSmall]
   const newBig = group.users[indexOfBig]
 
-  const turn = {
-    [newSmall.id]: { bet: group.blind.small, status: NAE.None },
-    [newBig.id]: { bet: group.blind.big, status: NAE.None },
+  const turn: ActionRunning['turn'] = {
+    [newSmall.id]: { bet: group.blind.small, status: 'none' },
+    [newBig.id]: { bet: group.blind.big, status: 'none' },
   }
 
   group.users
@@ -545,7 +543,7 @@ const resetAction = async ({
     .forEach(user => {
       turn[user.id] = {
         bet: 0,
-        status: NAE.None,
+        status: 'none',
       }
     })
 
@@ -585,13 +583,13 @@ const handleEndRoundWithSidePot = async (
   group: Group,
   newAction: Message['newAction']
 ) => {
-  const isDraw = newAction.type === NAE.Draw
+  const isDraw = newAction.type === 'draw'
 
   if (
     (newAction.order == null || Array.isArray(newAction.order) === false) &&
     !isDraw
   ) {
-    console.info(action.id, 'ending without sharing sidepot is now allowed')
+    console.info(action.id, 'ending without sharing sidepot is not allowed')
     return
   }
 
@@ -634,8 +632,8 @@ const handleEndRoundWithSidePot = async (
   })
 
   if (await resetAction({ action, pot, group })) {
-    await update(group.id, group, Type.Group)
-    await update(action.id, action, Type.ActionRunning)
+    await update(group.id, group, 'group')
+    await update(action.id, action, 'action:running')
   }
 }
 
@@ -654,9 +652,9 @@ const handleEndRound = async (
 
   let pot = 0
   switch (newAction.type) {
-    case NAE.Draw: {
+    case 'draw': {
       const ids = Object.entries(action.turn)
-        .filter(([, value]) => value.status !== NAE.Fold)
+        .filter(([, value]) => value.status !== 'fold')
         .map(([id]) => id)
 
       const share = Math.floor(action.pot / ids.length)
@@ -670,7 +668,7 @@ const handleEndRound = async (
       break
     }
 
-    case NAE.Winner: {
+    case 'winner': {
       const user = group.users.find(user => user.id === action.big) || {
         sum: 0,
       }
@@ -684,8 +682,8 @@ const handleEndRound = async (
   }
 
   if (await resetAction({ action, pot, group })) {
-    await update(group.id, group, Type.Group)
-    await update(action.id, action, Type.ActionRunning)
+    await update(group.id, group, 'group')
+    await update(action.id, action, 'action:running')
   }
 }
 
@@ -698,12 +696,12 @@ mainLoop(CHANNEL, async maybeMessage => {
 
   const group = await getFromStore<Group>({
     id: message.groupID,
-    type: Type.Group,
+    type: 'group',
   })
 
   const action = await getFromStore<ActionRunning>({
     id: message.actionID,
-    type: Type.ActionRunning,
+    type: 'action:running',
   })
 
   if (group == null) {
@@ -724,8 +722,7 @@ mainLoop(CHANNEL, async maybeMessage => {
   if (action.round === 4) {
     if (
       group.owner === message.userID &&
-      (message.newAction.type === NewActionEnum.Draw ||
-        message.newAction.type === NewActionEnum.Winner)
+      (message.newAction.type === 'draw' || message.newAction.type === 'winner')
     ) {
       return handleEndRound(action, group, message.newAction)
     }
@@ -742,7 +739,7 @@ mainLoop(CHANNEL, async maybeMessage => {
       `storing action ${message.newAction.type} for user ${message.userID}`
     )
 
-    return await update(action.id, action, Type.ActionRunning)
+    return await update(action.id, action, 'action:running')
   }
 
   return handleUpdate(action, group, message)

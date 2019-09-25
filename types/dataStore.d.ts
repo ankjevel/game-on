@@ -6,7 +6,7 @@ export interface KeyValue<T> {
   [key: string]: T
 }
 
-export interface IActionRunning<T, Y> extends Action {
+export interface ActionRunning extends Action {
   /**
    * 0: betting round
    * 1-3: regular rounds
@@ -14,8 +14,8 @@ export interface IActionRunning<T, Y> extends Action {
    */
   round: 0 | 1 | 2 | 3 | 4
   groupID: Group['id']
-  queued: KeyValue<T>
-  turn: KeyValue<Y>
+  queued: KeyValue<NewAction>
+  turn: KeyValue<UserSummary>
   button: User['id']
   big: User['id']
   small: User['id']
@@ -54,3 +54,38 @@ export interface Group {
 }
 
 export type GetResult = null | User | Group | Action
+
+export type Types = Action | Group | User
+
+export type StoreTypes = 'action' | 'group' | 'user' | 'action:running'
+
+export type NewActionEnum =
+  | 'none'
+  | 'bet'
+  | 'check'
+  | 'call'
+  | 'raise'
+  | 'allIn'
+  | 'fold'
+  | 'draw'
+  | 'winner'
+  | 'back'
+  | 'bank'
+  | 'join'
+  | 'leave'
+  | 'sittingOut'
+
+export type NewAction = {
+  type: NewActionEnum
+  value?: number
+  order?: User['id'][][]
+}
+
+export type UserSummary = {
+  bet: number
+  status: NewActionEnum
+}
+
+export type Check = <T>(result: T) => boolean
+
+export type Order = { [order: string]: string }

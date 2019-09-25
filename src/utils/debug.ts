@@ -1,6 +1,5 @@
-import { ActionRunning } from '../types/dataStore'
-import { Message } from '../types/action'
-import { Group } from 'dataStore'
+import { ActionRunning, Group } from 'dataStore'
+import { Message } from 'action'
 
 import { debug } from '../config'
 
