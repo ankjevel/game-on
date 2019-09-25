@@ -81,6 +81,14 @@ export const leave = (client: SocketIO.Socket) => {
     return
   }
 
+  for (const socket of room) {
+    const user = users.get(client.id)
+    if (user == null) {
+      continue
+    }
+    socket.emit('user:left', user)
+  }
+
   room.delete(client)
 
   if (room.size === 0) {
