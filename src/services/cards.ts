@@ -30,8 +30,8 @@ const getHEX = (suit: Suit): number => {
 const genCards = (hex: number) =>
   [...new Array(14)]
     .map((_, i) => {
-      if (i === 10) {
-        // 10 is Jack
+      if (i === 11) {
+        // 11 is Knight
         return null
       }
       return (hex | (i + 1)).toString(16)

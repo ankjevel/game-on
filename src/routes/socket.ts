@@ -47,19 +47,21 @@ subscribe('update:action:*', event => {
     }
 
     const turn = clone(message.turn)
-
     for (const socket of room) {
-      message.turn = {}
+      if (message.round !== 4) {
+        message.turn = {}
 
-      const user = users.get(socket.id)
+        const user = users.get(socket.id)
 
-      if (!user) continue
+        if (!user) continue
 
-      message.turn = clone(turn)
-      Object.entries(message.turn).forEach(([userID, userSummary]) => {
-        if (user.id === userID) return
-        delete userSummary.cards
-      })
+        message.turn = clone(turn)
+        Object.entries(message.turn).forEach(([userID, userSummary]) => {
+          if (user.id === userID) return
+          delete userSummary.cards
+        })
+      }
+
       socket.emit('update:action', message)
     }
   } catch (error) {

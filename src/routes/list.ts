@@ -34,7 +34,7 @@ export const register: Route = (app, auth) => {
         return res.sendStatus(404)
       }
 
-      if (isActionRunning(maybeType, data)) {
+      if (isActionRunning(maybeType, data) && data.round !== 4) {
         Object.entries(data.turn).forEach(([userID, userSummary]) => {
           if (user && user.id == userID) {
             return
