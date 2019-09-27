@@ -71,17 +71,13 @@ subscribe('update:action:*', event => {
 
 export const join = (client: SocketIO.Socket, newRoom: Group['id']) => {
   const room = rooms.get(newRoom)
-  if (room) {
+  const user = users.get(client.id)
+  if (room && user) {
     for (const socket of room) {
-      const user = users.get(client.id)
-      if (user == null) {
-        room.delete(socket)
-        continue
-      }
       socket.emit('user:joined', user)
     }
     room.add(client)
-  } else {
+  } else if (room) {
     const room = rooms.get(newRoom) || new Set()
     room.add(client)
     rooms.set(newRoom, room)
