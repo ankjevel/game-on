@@ -20,10 +20,12 @@ subscribe('update:group:*', event => {
   try {
     const message = parse<Group>(event.message)
     const room = rooms.get(channel)
+    console.log(channel, 'hasRoom?', !!room)
     if (!room) {
       return
     }
     for (const socket of room) {
+      console.log('update:group', socket.id)
       socket.emit('update:group', message)
     }
   } catch (error) {
@@ -62,6 +64,7 @@ subscribe('update:action:*', event => {
         })
       }
 
+      console.log('update:action', socket.id, message.id)
       socket.emit('update:action', message)
     }
   } catch (error) {
@@ -72,12 +75,14 @@ subscribe('update:action:*', event => {
 export const join = (client: SocketIO.Socket, newRoom: Group['id']) => {
   const room = rooms.get(newRoom)
   const user = users.get(client.id)
-  if (room && user) {
+  console.log(client.id, user)
+
+  if (room) {
     for (const socket of room) {
       socket.emit('user:joined', user)
     }
     room.add(client)
-  } else if (room) {
+  } else {
     const room = rooms.get(newRoom) || new Set()
     room.add(client)
     rooms.set(newRoom, room)
@@ -120,6 +125,7 @@ export const listen = (io: SocketIO.Server) => {
     console.log(id, 'user connected')
 
     client.on('user:join', (token: string) => {
+      console.log(id, 'user:join')
       const user = verify(token, config.jwt.secret) as JWTUSer
       users.set(id, {
         id: user.id,
@@ -138,6 +144,7 @@ export const listen = (io: SocketIO.Server) => {
         if (!body || !hasProp(body, 'id') || !hasProp(body, 'token')) {
           return
         }
+        console.log(id, 'group:join', body.id)
 
         const user = verify(body.token, config.jwt.secret) as JWTUSer
 
