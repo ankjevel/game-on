@@ -532,7 +532,7 @@ const findNext = (group: Group, startIndex: number, sum: number, tries = 0) => {
   return next
 }
 
-const resetAction = async ({
+export const resetAction = async ({
   action,
   group,
   pot = 0,
@@ -621,7 +621,7 @@ const resetAction = async ({
 const winners = (order: NonNullable<NewAction['order']>) =>
   order.reduce((sum, order) => sum + order.length, 0)
 
-const handleEndRoundWithSidePot = async (
+export const handleEndRoundWithSidePot = async (
   action: ActionRunningWithSidePot,
   group: Group,
   newAction: Message['newAction']
@@ -643,16 +643,34 @@ const handleEndRoundWithSidePot = async (
 
   const share: Share[] = []
   action.sidePot.forEach(sidepot => {
-    if ((order[0] || []).find(id => id === sidepot.id) != null) {
+    const first = order[0] || []
+
+    if (first.find(id => id === sidepot.id) == null) {
+      return
+    }
+
+    let mWinners = winners(order)
+    first.forEach((id, index) => {
+      if (id !== sidepot.id) {
+        return
+      }
+
       const sum = isDraw
         ? sidepot.sum
-        : Math.floor((sidepot.sum - (action.pot - pot)) * winners(order))
+        : Math.floor(
+            (sidepot.sum - (action.pot - pot)) * (mWinners / first.length)
+          )
+
       share.push({ id: sidepot.id, sum })
       pot -= sum
-    }
-    order = order.filter(order => order.find(id => id === sidepot.id) == null)
+      action.pot -= sum
+
+      --mWinners
+      first.splice(index, 1)
+    })
   })
 
+  order = order.filter(order => order.length)
   if (order.length) {
     const shared = winners(order)
     const sum = Math.floor(pot / shared)
