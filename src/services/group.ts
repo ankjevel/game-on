@@ -111,7 +111,10 @@ export const joinGroup = async ({
 
   return await updateWrapper(
     id,
-    res => res.action != null || res.users.some(user => user.id === userID),
+    res =>
+      res.action != null ||
+      res.users.some(user => user.id === userID) ||
+      res.users.length >= 10,
     async res => {
       res.users.push({
         id: userID,

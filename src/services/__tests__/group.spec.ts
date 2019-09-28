@@ -41,3 +41,68 @@ describe('#startGame', () => {
     expect(action).toMatchSnapshot()
   })
 })
+
+describe('#joinGroup', () => {
+  test('join group limits', async () => {
+    ds.all.mockResolvedValueOnce(['1'])
+    ds.all.mockResolvedValueOnce(['2'])
+    ds.all.mockResolvedValueOnce(['3'])
+    ds.all.mockResolvedValueOnce(['4'])
+    ds.all.mockResolvedValueOnce(['5'])
+    ds.get.mockImplementation(req => {
+      switch (req.id) {
+        case '1':
+          return { users: [{ id: userID }] }
+        case '2':
+          return { users: [], action: 'action is set' }
+        case '3':
+          return { users: [{ id: 'not-user-id' }] }
+        case '4':
+        case 'users-exists':
+          return { users: [...Array(10)].map(() => ({ id: 'not-user-id' })) }
+        case '5':
+          return { users: [] }
+        case 'action-set':
+          return { users: [], action: 'action is set' }
+        case 'success':
+          return { users: [], startSum: 1337 }
+      }
+      return null
+    })
+
+    const userID = 'user-id'
+
+    expect(
+      await group.joinGroup({ id: 'group-1', userID }),
+      'already in group'
+    ).toBeNull()
+
+    expect(
+      await group.joinGroup({ id: 'none', userID }),
+      'not in group, group does not exist'
+    ).toBeNull()
+
+    expect(
+      await group.joinGroup({ id: 'action-set', userID }),
+      'wont allow user to join, already has an action'
+    ).toBeNull()
+
+    expect(
+      await group.joinGroup({ id: 'users-exists', userID }),
+      'group is full'
+    ).toBeNull()
+
+    expect(await group.joinGroup({ id: 'success', userID }), 'should work!')
+      .toMatchInlineSnapshot(`
+      Object {
+        "startSum": 1337,
+        "users": Array [
+          Object {
+            "id": "user-id",
+            "sum": 1337,
+          },
+        ],
+      }
+    `)
+  })
+})
