@@ -83,7 +83,7 @@ const applyAction = (userAction: NewActionEnum, action: ActionRunning) =>
     ? 'bet'
     : userAction
 
-const getPlayer = ({
+export const getPlayer = ({
   start,
   group,
   action,
@@ -156,7 +156,7 @@ const raisePot = ({
   return true
 }
 
-const handleUpdate = async (
+export const handleUpdate = async (
   action: ActionRunning,
   group: Group,
   { newAction, userID }: Message
@@ -379,15 +379,19 @@ const handleUpdate = async (
   action.button = nextUserID
 
   if (action.round === 0) {
-    turns.every(turn => turn.status !== 'none')
-
     if (
       turns.every(turn => turn.status !== 'none') &&
       turns
         .filter(turn => turn.status !== 'allIn' && turn.status !== 'fold')
-        .every((turn, i, array) =>
-          array[i - 1] ? array[i - 1].bet === turn.bet : true
-        )
+        .every((turn, i, array) => {
+          const prev = array[i - 1]
+
+          if (prev) {
+            return prev.bet === turn.bet && prev.bet >= currentAnte
+          }
+
+          return turn.bet >= currentAnte && turn.bet >= player.bet
+        })
     ) {
       ++action.round
       action.button = action.big
@@ -434,7 +438,13 @@ const handleUpdate = async (
     turns.filter(x => x.status !== 'fold' && x.status !== 'allIn').length <= 1
   ) {
     if (turns.filter(x => x.status === 'allIn').length >= 1) {
-      if (turns.filter(x => x.status === 'none').length >= 1) {
+      if (
+        turns.filter(x => x.status === 'none').length >= 1 ||
+        turns
+          .filter(turn => turn.status !== 'allIn' && turn.status !== 'fold')
+          .every(turn => turn.bet >= player.bet && turn.bet >= currentAnte) ===
+          false
+      ) {
         break maybeEnd
       }
       action.round = 4
@@ -698,7 +708,7 @@ export const handleEndRoundWithSidePot = async (
   }
 }
 
-const handleEndRound = async (
+export const handleEndRound = async (
   action: ActionRunning,
   group: Group,
   newAction: Message['newAction']
