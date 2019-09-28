@@ -2,12 +2,25 @@ import { StoreTypes, ActionRunning } from 'dataStore'
 import Route from 'Route'
 
 import { getWrapper, isStoreType } from '../services/dataStore'
+import { getPublicGroups } from '../services/group'
 import { nullOrEmpty, hasProp } from '../utils'
 
 const isActionRunning = (type: string, data: any): data is ActionRunning =>
   type === 'action' && data && hasProp(data, 'turn')
 
 export const register: Route = (app, auth) => {
+  app.get(
+    '/get/public-groups',
+    // auth,
+    async ({ query: { take = 10 } /*user*/ }, res) => {
+      // if (user == null) {
+      //   return res.sendStatus(401)
+      // }
+
+      res.send(await getPublicGroups({ take }))
+    }
+  )
+
   app.get(
     '/get/:id/:type',
     auth,

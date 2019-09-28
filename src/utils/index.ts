@@ -4,9 +4,10 @@ import hasProp from './hasProp'
 import isNumber from './isNumber'
 import nullOrEmpty from './nullOrEmpty'
 import parse from './parse'
+import toBoolean from './toBoolean'
 import wait from './wait'
 
-export { clone, debug, hasProp, isNumber, nullOrEmpty, parse, wait }
+export { clone, debug, hasProp, isNumber, nullOrEmpty, parse, toBoolean, wait }
 
 export default {
   clone,
@@ -15,5 +16,6 @@ export default {
   isNumber,
   nullOrEmpty,
   parse,
+  toBoolean,
   wait,
 }

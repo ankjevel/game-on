@@ -57,6 +57,7 @@ export interface Group {
     big: number
   }
   action?: Action['id']
+  pub: boolean
 }
 
 export type GetResult = null | User | Group | Action

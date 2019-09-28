@@ -85,6 +85,13 @@ const input = {
       Group['blind']['big']
     >
   },
+
+  pub(input: { pub: any }) {
+    return (
+      (utils.hasProp<any>(input, 'pub') && utils.toBoolean(input.pub)) ||
+      undefined
+    )
+  },
 }
 
 export const register: Route = (app, auth) => {
@@ -100,6 +107,7 @@ export const register: Route = (app, auth) => {
         smallBlind: input.smallBlind(body),
         bigBlind: input.bigBlind(body),
         userID: user.id,
+        pub: input.pub(body),
       })
     )
   })
@@ -144,6 +152,7 @@ export const register: Route = (app, auth) => {
       smallBlind: input.smallBlind(body),
       bigBlind: input.bigBlind(body),
       userID: user.id,
+      pub: input.pub(body),
     })
 
     if (result == null) {

@@ -42,13 +42,44 @@ export const getGroupForUser = async (id: UserWithOutPassword['id']) => {
   return null
 }
 
+type PublicGroup = Group & {
+  users: number
+  owner: undefined
+}
+
+export const getPublicGroups = async ({ take }: { take: number }) => {
+  const results: PublicGroup[] = []
+
+  let i = 0
+  for (const key of await dataStore.all('group')) {
+    if (i++ >= take) break
+    const res = await getWrapper(key)
+
+    if (res == null || !res.pub || res.action != null) {
+      continue
+    }
+
+    res.users = res.users.length as any
+    res.owner = undefined as any
+    res.action = undefined
+
+    results.push(res as PublicGroup)
+  }
+
+  return results
+}
+
 export const newGroup = async ({
   name = '',
   startSum = 1000,
   smallBlind = 2,
   bigBlind = 5,
   userID,
-}: WithOptional<Pick<Group, 'name' | 'startSum'>, 'name' | 'startSum'> & {
+  pub = true,
+}: WithOptional<
+  Pick<Group, 'name' | 'startSum' | 'pub'>,
+  'name' | 'startSum' | 'pub'
+> & {
   userID: UserWithOutPassword['id']
   smallBlind?: Group['blind']['small']
   bigBlind?: Group['blind']['big']
@@ -73,6 +104,7 @@ export const newGroup = async ({
           sum: startSum,
         },
       ],
+      pub,
     }
   })
 
@@ -198,6 +230,7 @@ export const updateGroup = async ({
   bigBlind,
   owner,
   userID,
+  pub,
 }: Pick<Group, 'id'> & {
   name: MaybeUndefined<Group['name']>
   startSum: MaybeUndefined<Group['startSum']>
@@ -205,6 +238,7 @@ export const updateGroup = async ({
   bigBlind: MaybeUndefined<Group['blind']['big']>
   owner: MaybeUndefined<Group['owner']>
   userID: UserWithOutPassword['id']
+  pub: MaybeUndefined<Group['pub']>
 }): Promise<MaybeNull<Group>> => {
   const update = {
     bigBlind: bigBlind != null,
@@ -212,6 +246,7 @@ export const updateGroup = async ({
     name: name != null,
     owner: owner != null,
     startSum: startSum != null,
+    pub: pub != null,
   }
 
   return await updateWrapper(
@@ -235,6 +270,9 @@ export const updateGroup = async ({
       }
       if (startSum && res.startSum === startSum) {
         update.startSum = false
+      }
+      if (pub && res.pub === pub) {
+        update.pub = false
       }
 
       if (update.bigBlind && bigBlind) {
@@ -330,6 +368,9 @@ export const updateGroup = async ({
         res.users.forEach(user => {
           user.sum = startSum
         })
+      }
+      if (update.pub && pub !== undefined) {
+        res.pub = pub
       }
       return res
     }
