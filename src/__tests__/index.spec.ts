@@ -125,6 +125,7 @@ describe('/group', () => {
           sum: 1000,
         },
       ],
+      pub: true,
     }
 
     const tests: ([any, any] | [any, any, string])[] = [

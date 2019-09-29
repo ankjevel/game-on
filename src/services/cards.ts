@@ -1,6 +1,42 @@
 import { Suit } from 'cards'
 import { MutableDeck, Deck } from 'dataStore'
 
+type Sorted = {
+  spades: number[]
+  hearts: number[]
+  diamonds: number[]
+  clubs: number[]
+}
+
+type SameObject = {
+  1: number
+  2: number
+  3: number
+  4: number
+  5: number
+  6: number
+  7: number
+  8: number
+  9: number
+  10: number
+  11: number
+  13: number
+  14: number
+}
+
+export enum Hands {
+  RoyalFlush = 0,
+  StraightFlush = 1,
+  FourOfAKind = 2,
+  FullHouse = 3,
+  Flush = 4,
+  Straight = 5,
+  ThreeOfAKind = 6,
+  TwoPair = 7,
+  Pair = 8,
+  HighCard = 9,
+}
+
 /**
  * Card | Suit | value
  */
@@ -11,6 +47,24 @@ export enum Enum {
   Diamonds = 0xc0,
   Clubs = 0xd0,
 }
+
+const defaultSameObject = () =>
+  [...Array(14)].reduce((x, _, i) => {
+    if (i === 11) return x
+    x[i + 1] = 0
+    return x
+  }, {}) as SameObject
+
+const defaultFlushObject = () => ({
+  spades: false,
+  hearts: false,
+  diamonds: false,
+  clubs: false,
+})
+
+const sort = (a: number, b: number) => (a > b ? 1 : a < b ? -1 : 0)
+const sortAceLast = (a: number, b: number) =>
+  a === 1 ? 1 : b === 1 ? -1 : a > b ? 1 : a < b ? -1 : 0
 
 const getHEX = (suit: Suit): number => {
   switch (suit) {
@@ -88,3 +142,162 @@ export const takeCards = <T>(deck: MutableDeck, take: number): T => {
 
   return (result as unknown) as T
 }
+
+export const sortCards = (cards: number[]) =>
+  Object.entries(
+    cards.reduce(
+      (suits: Sorted, card) => {
+        if ((card ^ Enum.Hearts) <= 14) {
+          suits.hearts.push(card ^ Enum.Hearts)
+        }
+        if ((card ^ Enum.Diamonds) <= 14) {
+          suits.diamonds.push(card ^ Enum.Diamonds)
+        }
+        if ((card ^ Enum.Clubs) <= 14) {
+          suits.clubs.push(card ^ Enum.Clubs)
+        }
+        if ((card ^ Enum.Spades) <= 14) {
+          suits.spades.push(card ^ Enum.Spades)
+        }
+        return suits
+      },
+      {
+        spades: [],
+        hearts: [],
+        diamonds: [],
+        clubs: [],
+      }
+    )
+  ).reduce((suits, [suit, cards]) => {
+    suits[suit] = cards.sort(sort)
+    return suits
+  }, {}) as Sorted
+
+export const parseHand = (communityCards: string[], hand: [string, string]) => {
+  const cards = sortCards(
+    [...communityCards, ...hand].map(card => parseInt(card, 16))
+  )
+  const flush = Object.entries(cards).reduce((flush, [suit, cards]) => {
+    flush[suit] = cards.length >= 5
+    return flush
+  }, defaultFlushObject())
+  const same = Object.values(cards).reduce((list, cards) => {
+    cards.forEach(card => ++list[card])
+    return list
+  }, defaultSameObject())
+  const sameEntries = Object.entries(same)
+  const pairs = sameEntries
+    .filter(([, amount]) => amount === 2)
+    .map(([card]) => card)
+  const threeOfAKinds = sameEntries
+    .filter(([, amount]) => amount === 3)
+    .map(([card]) => card)
+  const fourOfAKinds = sameEntries
+    .filter(([, amount]) => amount === 4)
+    .map(([card]) => card)
+  const straightFlushes = Object.entries(flush)
+    .filter(([suit, isFlush]) => isFlush && hasStraight(cards[suit]))
+    .map(([suit]) => suit)
+
+  return {
+    cards,
+    flush,
+    same,
+    pairs,
+    threeOfAKinds,
+    fourOfAKinds,
+    straightFlushes,
+  }
+}
+
+const straightOrders = [
+  {
+    2: 1,
+    3: 2,
+    4: 3,
+    5: 4,
+    6: 5,
+    7: 6,
+    8: 7,
+    9: 8,
+    10: 9,
+    11: 10,
+    13: 11,
+    14: 13,
+  },
+  {
+    3: 2,
+    4: 3,
+    5: 4,
+    6: 5,
+    7: 6,
+    8: 7,
+    9: 8,
+    10: 9,
+    11: 10,
+    13: 11,
+    14: 13,
+    1: 14,
+  },
+]
+
+const sliceAndCheck = (cards: number[], index: number, orderIndex: number) => {
+  const slice = cards.slice(index, cards.length).slice(0, 5)
+  return (
+    slice.length >= 5 &&
+    slice.every(
+      (card, i, cards) =>
+        i === 0 || straightOrders[orderIndex][card] === cards[i - 1]
+    )
+  )
+}
+
+export const hasStraight = (cards: number[]) =>
+  cards.sort(sort).some((_, i, cards) => sliceAndCheck(cards, i, 0)) ||
+  cards.sort(sortAceLast).some((_, i, cards) => sliceAndCheck(cards, i, 1))
+
+export const checkHand = (communityCards: string[], hand: [string, string]) => {
+  const parsed = parseHand(communityCards, hand)
+  const cards = [...new Set(Object.values(parsed.cards).flatMap(x => x))].sort(
+    sort
+  )
+
+  const highCards = cards.sort(sortAceLast).reverse()
+  const pair = parsed.pairs.length >= 1
+  const twoPair = parsed.pairs.length >= 2
+  const threeOfAKind = parsed.threeOfAKinds.length >= 1
+  const straight = hasStraight(cards.slice(0))
+  const flush = Object.values(parsed.flush).some(flush => flush)
+  const fullHouse = parsed.pairs.length >= 1 && parsed.threeOfAKinds.length >= 1
+  const fourOfAKind = parsed.fourOfAKinds.length >= 1
+  const straightFlush = parsed.straightFlushes.length >= 1
+  const royalFlush = parsed.straightFlushes
+    .map(
+      suit =>
+        parsed.cards[suit].filter(i => [10, 11, 13, 14, 1].includes(i))
+          .length === 5
+    )
+    .some(bool => bool)
+
+  const onHand = [
+    [Hands.Pair, pair],
+    [Hands.TwoPair, twoPair],
+    [Hands.ThreeOfAKind, threeOfAKind],
+    [Hands.Straight, straight],
+    [Hands.Flush, flush],
+    [Hands.FullHouse, fullHouse],
+    [Hands.FourOfAKind, fourOfAKind],
+    [Hands.StraightFlush, straightFlush],
+    [Hands.RoyalFlush, royalFlush],
+  ]
+    .filter(([, hasOnHand]) => hasOnHand)
+    .map(([hand]) => hand)
+
+  return {
+    parsed,
+    highCards,
+    onHand,
+  }
+}
+
+export default newDeck
