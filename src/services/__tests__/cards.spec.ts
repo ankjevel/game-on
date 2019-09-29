@@ -129,6 +129,14 @@ describe('#checkHand', () => {
       ])
     )
   })
+
+  it('gets the pair on hand', () => {
+    const { onHand: hand } = cards.checkHand(
+      [],
+      toHex([Enum.Spades | 1, Enum.Hearts | 1])
+    )
+    expect(hand).toEqual(expect.arrayContaining([cards.Hands.Pair]))
+  })
 })
 
 describe('#hasStraight', () => {

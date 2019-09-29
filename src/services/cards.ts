@@ -24,6 +24,8 @@ type SameObject = {
   14: number
 }
 
+type Cards = string[]
+
 export enum Hands {
   RoyalFlush = 0,
   StraightFlush = 1,
@@ -173,7 +175,7 @@ export const sortCards = (cards: number[]) =>
     return suits
   }, {}) as Sorted
 
-export const parseHand = (communityCards: string[], hand: [string, string]) => {
+export const parseHand = (communityCards: Cards, hand: Cards) => {
   const cards = sortCards(
     [...communityCards, ...hand].map(card => parseInt(card, 16))
   )
@@ -256,13 +258,16 @@ export const hasStraight = (cards: number[]) =>
   cards.sort(sort).some((_, i, cards) => sliceAndCheck(cards, i, 0)) ||
   cards.sort(sortAceLast).some((_, i, cards) => sliceAndCheck(cards, i, 1))
 
-export const checkHand = (communityCards: string[], hand: [string, string]) => {
+export const checkHand = (communityCards: Cards, hand: Cards) => {
   const parsed = parseHand(communityCards, hand)
   const cards = [...new Set(Object.values(parsed.cards).flatMap(x => x))].sort(
     sort
   )
 
-  const highCards = cards.sort(sortAceLast).reverse()
+  const highCards = cards
+    .slice(0)
+    .sort(sortAceLast)
+    .reverse()
   const pair = parsed.pairs.length >= 1
   const twoPair = parsed.pairs.length >= 2
   const threeOfAKind = parsed.threeOfAKinds.length >= 1
