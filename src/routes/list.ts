@@ -54,6 +54,7 @@ export const register: Route = (app, auth) => {
           }
 
           delete userSummary.cards
+          delete userSummary.hand
         })
       }
 

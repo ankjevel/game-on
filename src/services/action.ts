@@ -21,7 +21,7 @@ import * as dataStore from './dataStore'
 import { pushSession } from './session'
 import { parse, hasProp, clone, debug } from '../utils'
 import mainLoop from './messageListener'
-import { newDeck, takeCards } from './cards'
+import { newDeck, takeCards, checkHand } from './cards'
 
 const CHANNEL = 'message'
 
@@ -306,6 +306,8 @@ export const handleUpdate = async (
       }
 
       player.status = 'fold'
+      player.cards = undefined
+      player.hand = undefined
       break
     }
 
@@ -348,8 +350,8 @@ export const handleUpdate = async (
       const bet = player.bet + user.sum
 
       player.bet = bet
-      action.pot += user.sum
       player.status = 'allIn'
+      action.pot += user.sum
       user.sum = 0
 
       if (action.sidePot == null) {
@@ -360,6 +362,10 @@ export const handleUpdate = async (
         id: userID,
         sum: bet,
       })
+
+      if (player.bet > currentAnte) {
+        action.big = userID
+      }
 
       break
     }
@@ -467,6 +473,12 @@ export const handleUpdate = async (
     maybeDealCards(action, group, round)
   }
 
+  Object.keys(action.turn).forEach(key => {
+    const user = action.turn[key]
+    const hand = checkHand(action.communityCards, user.cards || [])
+    user.hand = hand.onHand.slice(0, 1)[0]
+  })
+
   await dataStore.update(action.id, action, 'action:running')
   await dataStore.update(group.id, group, 'group')
 }
@@ -511,7 +523,10 @@ const dealCards = (
 const maybeDealCards = (action: ActionRunning, group: Group, from: number) => {
   const size = group.users.length
   const buttonIndex = group.users.findIndex(user => user.id === action.button)
-  const usersOrderedByButton = group.users.slice(0).map(({ id }) => id)
+  const usersOrderedByButton = group.users
+    .slice(0)
+    .map(({ id }) => id)
+    .filter(id => action.turn[id].status !== 'fold')
   usersOrderedByButton.splice(
     0,
     0,
@@ -790,6 +805,7 @@ mainLoop(CHANNEL, async maybeMessage => {
     return
   }
 
+  // TODO: wait for confirmations
   if (action.round === 4) {
     if (
       group.owner === message.userID &&

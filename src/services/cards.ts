@@ -26,7 +26,7 @@ type SameObject = {
 
 type Cards = string[]
 
-export enum Hands {
+export enum Hand {
   RoyalFlush = 0,
   StraightFlush = 1,
   FourOfAKind = 2,
@@ -285,18 +285,18 @@ export const checkHand = (communityCards: Cards, hand: Cards) => {
     .some(bool => bool)
 
   const onHand = [
-    [Hands.Pair, pair],
-    [Hands.TwoPair, twoPair],
-    [Hands.ThreeOfAKind, threeOfAKind],
-    [Hands.Straight, straight],
-    [Hands.Flush, flush],
-    [Hands.FullHouse, fullHouse],
-    [Hands.FourOfAKind, fourOfAKind],
-    [Hands.StraightFlush, straightFlush],
-    [Hands.RoyalFlush, royalFlush],
+    [Hand.RoyalFlush, royalFlush],
+    [Hand.StraightFlush, straightFlush],
+    [Hand.FourOfAKind, fourOfAKind],
+    [Hand.FullHouse, fullHouse],
+    [Hand.Flush, flush],
+    [Hand.Straight, straight],
+    [Hand.ThreeOfAKind, threeOfAKind],
+    [Hand.TwoPair, twoPair],
+    [Hand.Pair, pair],
   ]
     .filter(([, hasOnHand]) => hasOnHand)
-    .map(([hand]) => hand)
+    .map(([hand]) => hand) as Hand[]
 
   return {
     parsed,

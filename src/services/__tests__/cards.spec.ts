@@ -59,7 +59,7 @@ describe('#checkHand', () => {
     ]
 
     expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual(
-      expect.arrayContaining([cards.Hands.Pair, cards.Hands.Flush])
+      expect.arrayContaining([cards.Hand.Pair, cards.Hand.Flush])
     )
   })
 
@@ -74,7 +74,7 @@ describe('#checkHand', () => {
     ]
 
     expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual(
-      expect.arrayContaining([cards.Hands.TwoPair])
+      expect.arrayContaining([cards.Hand.TwoPair])
     )
   })
 
@@ -89,7 +89,7 @@ describe('#checkHand', () => {
     ]
 
     expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual(
-      expect.arrayContaining([cards.Hands.FourOfAKind])
+      expect.arrayContaining([cards.Hand.FourOfAKind])
     )
   })
 
@@ -105,9 +105,9 @@ describe('#checkHand', () => {
 
     expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual(
       expect.arrayContaining([
-        cards.Hands.Pair,
-        cards.Hands.FullHouse,
-        cards.Hands.ThreeOfAKind,
+        cards.Hand.Pair,
+        cards.Hand.FullHouse,
+        cards.Hand.ThreeOfAKind,
       ])
     )
   })
@@ -123,10 +123,7 @@ describe('#checkHand', () => {
     ]
 
     expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual(
-      expect.arrayContaining([
-        cards.Hands.StraightFlush,
-        cards.Hands.RoyalFlush,
-      ])
+      expect.arrayContaining([cards.Hand.StraightFlush, cards.Hand.RoyalFlush])
     )
   })
 
@@ -135,7 +132,7 @@ describe('#checkHand', () => {
       [],
       toHex([Enum.Spades | 1, Enum.Hearts | 1])
     )
-    expect(hand).toEqual(expect.arrayContaining([cards.Hands.Pair]))
+    expect(hand).toEqual(expect.arrayContaining([cards.Hand.Pair]))
   })
 })
 

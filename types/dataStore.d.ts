@@ -92,6 +92,7 @@ export type UserSummary = {
   bet: number
   status: NewActionEnum
   cards?: [string, string]
+  hand?: number // Hands
 }
 
 export type Check = <T>(result: T) => boolean

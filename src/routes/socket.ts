@@ -61,6 +61,7 @@ subscribe('update:action:*', event => {
         Object.entries(message.turn).forEach(([userID, userSummary]) => {
           if (user.id === userID) return
           delete userSummary.cards
+          delete userSummary.hand
         })
       }
 
