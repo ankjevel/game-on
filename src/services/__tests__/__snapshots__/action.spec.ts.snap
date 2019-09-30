@@ -140,7 +140,7 @@ Object {
 
 exports[`#handleUpdate should not end round 1`] = `
 Object {
-  "big": "user:0f3bd090-e991-425a-8978-71ad27164510",
+  "big": "user:f7fefb97-1cd6-4507-b312-611d157a65bf",
   "button": "user:0f3bd090-e991-425a-8978-71ad27164510",
   "communityCards": Array [],
   "deck": Array [
@@ -212,14 +212,17 @@ Object {
   "turn": Object {
     "user:0f3bd090-e991-425a-8978-71ad27164510": Object {
       "bet": 2,
+      "hand": undefined,
       "status": "bet",
     },
     "user:63d94748-7134-4d5c-b3f9-612f9c0520c4": Object {
       "bet": 2,
+      "hand": undefined,
       "status": "fold",
     },
     "user:f7fefb97-1cd6-4507-b312-611d157a65bf": Object {
       "bet": 14,
+      "hand": undefined,
       "status": "allIn",
     },
   },
