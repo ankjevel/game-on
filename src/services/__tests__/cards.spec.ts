@@ -226,6 +226,23 @@ describe.only('#sortHands', () => {
       expect.arrayContaining(['user:Hearts-Diamonds', 'user:Spades-Clubs']),
       ['user:2-high'],
     ])
+
+    expect(
+      cards.sortHands(
+        generate(
+          toHex([Clubs | 14, Clubs | 8, Clubs | 11, Diamonds | 6, Clubs | 5]),
+          [
+            ['Hearts-8', [Hearts | 14, Hearts | 8]],
+            ['Spades-8', [Spades | 14, Spades | 8]],
+            ['Spades-11', [Diamonds | 14, Spades | 11]],
+          ]
+        )
+      ),
+      'handles a _more complicated draw_'
+    ).toEqual([
+      ['user:Spades-11'],
+      expect.arrayContaining(['user:Hearts-8', 'user:Spades-8']),
+    ])
   })
 
   it('handles `Straight`', () => {

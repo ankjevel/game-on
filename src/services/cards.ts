@@ -1,9 +1,18 @@
-import { Suit, Sorted, SameObject, Hand, Card } from 'cards'
+import {
+  Card,
+  Cards,
+  Element,
+  Hand,
+  HandOrder,
+  SameObject,
+  Sorted,
+  SortHigh,
+  Suit,
+  Tied,
+} from 'cards'
 import { MutableDeck, Deck, ActionRunning, HandParsed } from 'dataStore'
 
 import { n, clone } from '../utils'
-
-type Cards = string[]
 
 export enum HandEnum {
   RoyalFlush = 0,
@@ -36,12 +45,13 @@ const defaultSameObject = () =>
     return x
   }, {}) as SameObject)
 
-const defaultFlushObject = () => ({
-  spades: false,
-  hearts: false,
-  diamonds: false,
-  clubs: false,
-})
+const defaultFlushObject = () =>
+  clone({
+    spades: false,
+    hearts: false,
+    diamonds: false,
+    clubs: false,
+  })
 
 const sort = (a: number, b: number) => (a > b ? 1 : a < b ? -1 : 0)
 const sortAceLast = (a: number, b: number) =>
@@ -257,14 +267,8 @@ export const hasStraight = (cards: number[]) => {
   return [hasStraight, straight]
 }
 
-type Element = [string, HandParsed]
-type Tied = { index: number; insertInto: number; data: Element[] }
-
-interface HandOrder {
-  (a: Element, b: Element): 0 | 1 | -1
-}
-
 export const sortHands = (turn: ActionRunning['turn']) => {
+  const tied: Tied[] = []
   const reduced = Object.entries(turn).reduce(
     (order, [id, { handParsed }]) => {
       order[
@@ -278,16 +282,12 @@ export const sortHands = (turn: ActionRunning['turn']) => {
     },
     n(HandEnum.HighCard + 1).map(() => [] as any) as Element[]
   )
-
-  const tied: Tied[] = []
-  let sorted: Element[] = []
-
-  const forEach = (order: Element, index: number) => {
+  const sorted = reduced.map((order: Element, index: number) => {
     if (order.length <= 1) {
       return order
     }
 
-    const sort = order.sort((a: any, b: any) => {
+    return order.sort((a: any, b: any) => {
       const sortOrder = getHandOrder(index)(a, b)
 
       if (sortOrder === 0) {
@@ -307,25 +307,20 @@ export const sortHands = (turn: ActionRunning['turn']) => {
 
       return sortOrder
     })
-
-    return sort
-  }
-
-  sorted = reduced.map(forEach)
+  })
 
   while (tied.length > 0) {
     if (tied.length === 0) {
       break
     }
 
-    let element: MaybeUndefined<Tied>
-
-    while ((element = tied.pop())) {
-      if (element == null) {
+    let tie: MaybeUndefined<Tied>
+    while ((tie = tied.pop())) {
+      if (tie == null) {
         break
       }
 
-      const { index, insertInto, data } = element
+      const { index, insertInto, data } = tie
       for (const element of data) {
         sorted[index].splice(sorted[index].indexOf(element as any), 1)
       }
@@ -338,16 +333,10 @@ export const sortHands = (turn: ActionRunning['turn']) => {
         break
       }
 
-      const compared = getHandOrder(next)(data[0], data[1])
-
-      if (compared === 0) {
+      if (getHandOrder(next)(data[0], data[1]) === 0) {
         tied.push({ index: next, insertInto, data })
       } else {
-        console.log('hande this case', data, compared)
-      }
-
-      if (last) {
-        break
+        console.error('unhandled case where order is not 0')
       }
     }
   }
@@ -366,10 +355,6 @@ export const sortHands = (turn: ActionRunning['turn']) => {
         ),
       [] as string[][]
     )
-}
-
-interface SortHigh {
-  (a?: number | string, b?: number | string): 0 | 1 | -1
 }
 
 const sortHigh: SortHigh = (a, b) => {
@@ -459,24 +444,22 @@ export const checkHand = (communityCards: Cards, hand: Cards) => {
 
   parsed.straightHigh = ((straight as number[]) || []).pop() as any
 
-  const onHand = [
-    [HandEnum.RoyalFlush, royalFlush],
-    [HandEnum.StraightFlush, straightFlush],
-    [HandEnum.FourOfAKind, fourOfAKind],
-    [HandEnum.FullHouse, fullHouse],
-    [HandEnum.Flush, flush],
-    [HandEnum.Straight, hadStraight],
-    [HandEnum.ThreeOfAKind, threeOfAKind],
-    [HandEnum.TwoPair, twoPair],
-    [HandEnum.Pair, pair],
-  ]
-    .filter(([, hasOnHand]) => hasOnHand)
-    .map(([hand]) => hand) as Hand[]
-
   return {
     parsed,
     highCards,
-    onHand,
+    onHand: [
+      [HandEnum.RoyalFlush, royalFlush],
+      [HandEnum.StraightFlush, straightFlush],
+      [HandEnum.FourOfAKind, fourOfAKind],
+      [HandEnum.FullHouse, fullHouse],
+      [HandEnum.Flush, flush],
+      [HandEnum.Straight, hadStraight],
+      [HandEnum.ThreeOfAKind, threeOfAKind],
+      [HandEnum.TwoPair, twoPair],
+      [HandEnum.Pair, pair],
+    ]
+      .filter(([, hasOnHand]) => hasOnHand)
+      .map(([hand]) => hand) as Hand[],
   }
 }
 
