@@ -1,10 +1,7 @@
-import { Deck, ActionRunning, User } from 'dataStore'
-import { clone } from '../../utils'
-import * as fixture from '../__fixtures__/calculate-winner.fixture'
-
+import { Deck } from 'dataStore'
 import * as cards from '../cards'
 
-const { Enum } = cards
+const { Enum, HandEnum } = cards
 const toHex = <T>(array: number[]) =>
   (array.map(card => card.toString(16)) as any) as T
 
@@ -33,8 +30,8 @@ describe('#checkHand', () => {
   it('has a high card (ACE high, then King)', () => {
     const hand = [Enum.Spades | 1, Enum.Spades | 3]
     const communityCards = [
-      Enum.Hearts | 13,
-      Enum.Diamonds | 12,
+      Enum.Hearts | 11,
+      Enum.Diamonds | 14,
       Enum.Clubs | 6,
       Enum.Clubs | 5,
       Enum.Clubs | 10,
@@ -47,7 +44,7 @@ describe('#checkHand', () => {
 
     expect(onHand).toEqual([])
     expect(highCards[0]).toEqual(1)
-    expect(highCards[1]).toEqual(13)
+    expect(highCards[1]).toEqual(14)
   })
 
   it('should get a `flush` and `pair`', () => {
@@ -61,7 +58,7 @@ describe('#checkHand', () => {
     ]
 
     expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual(
-      expect.arrayContaining([cards.Hand.Pair, cards.Hand.Flush])
+      expect.arrayContaining([HandEnum.Pair, HandEnum.Flush])
     )
   })
 
@@ -76,7 +73,7 @@ describe('#checkHand', () => {
     ]
 
     expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual(
-      expect.arrayContaining([cards.Hand.TwoPair])
+      expect.arrayContaining([HandEnum.TwoPair])
     )
   })
 
@@ -91,7 +88,7 @@ describe('#checkHand', () => {
     ]
 
     expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual(
-      expect.arrayContaining([cards.Hand.FourOfAKind])
+      expect.arrayContaining([HandEnum.FourOfAKind])
     )
   })
 
@@ -107,9 +104,9 @@ describe('#checkHand', () => {
 
     expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual(
       expect.arrayContaining([
-        cards.Hand.Pair,
-        cards.Hand.FullHouse,
-        cards.Hand.ThreeOfAKind,
+        HandEnum.Pair,
+        HandEnum.FullHouse,
+        HandEnum.ThreeOfAKind,
       ])
     )
   })
@@ -125,7 +122,7 @@ describe('#checkHand', () => {
     ]
 
     expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual(
-      expect.arrayContaining([cards.Hand.StraightFlush, cards.Hand.RoyalFlush])
+      expect.arrayContaining([HandEnum.StraightFlush, HandEnum.RoyalFlush])
     )
   })
 
@@ -134,22 +131,28 @@ describe('#checkHand', () => {
       [],
       toHex([Enum.Spades | 1, Enum.Hearts | 1])
     )
-    expect(hand).toEqual(expect.arrayContaining([cards.Hand.Pair]))
+    expect(hand).toEqual(expect.arrayContaining([HandEnum.Pair]))
   })
 })
 
 describe('#hasStraight', () => {
   it('returns true if hand has straight', () => {
     const { hasStraight: straight } = cards
-    expect(straight([1, 2, 3, 4, 5])).toEqual(true)
-    expect(straight([2, 3, 4, 5, 7])).toEqual(false)
-    expect(straight([1, 10, 11, 13, 14])).toEqual(true)
-    expect(straight([1, 2, 3, 4, 5, 13, 10])).toEqual(true)
-    expect(straight([1, 6, 7, 10, 11, 13, 14])).toEqual(true)
+    expect(straight([1, 2, 3, 4, 5])).toEqual(expect.arrayContaining([true]))
+    expect(straight([2, 3, 4, 5, 7])).toEqual(expect.arrayContaining([false]))
+    expect(straight([1, 10, 11, 13, 14])).toEqual(
+      expect.arrayContaining([true])
+    )
+    expect(straight([1, 2, 3, 4, 5, 13, 10])).toEqual(
+      expect.arrayContaining([true])
+    )
+    expect(straight([1, 6, 7, 10, 11, 13, 14])).toEqual(
+      expect.arrayContaining([true])
+    )
   })
 })
 
-describe.only('#sortHands', () => {
+describe('#sortHands', () => {
   const { Clubs, Hearts, Diamonds, Spades } = Enum
   const generate = (
     communityCards: string[],
@@ -319,6 +322,56 @@ describe.only('#sortHands', () => {
       ['user:four-of-kind'],
       ['user:full-house-6-high'],
       ['user:full-house-6-high-low'],
+    ])
+  })
+
+  it('handles `StraightFlush`', () => {
+    expect(
+      cards.sortHands(
+        generate(
+          toHex([Clubs | 11, Clubs | 10, Clubs | 9, Clubs | 8, Hearts | 7]),
+          [
+            ['straight-flush', [Clubs | 7, Hearts | 14]],
+            ['flush', [Clubs | 6, Diamonds | 7]],
+            ['straight', [Diamonds | 13, Diamonds | 14]],
+          ]
+        )
+      ),
+      'one has a straight flush'
+    ).toEqual([['user:straight-flush'], ['user:flush'], ['user:straight']])
+
+    expect(
+      cards.sortHands(
+        generate(
+          toHex([Clubs | 10, Clubs | 9, Clubs | 8, Clubs | 7, Hearts | 6]),
+          [
+            ['11-high', [Clubs | 11, Diamonds | 7]],
+            ['6-high', [Clubs | 6, Hearts | 14]],
+            ['straight', [Diamonds | 13, Diamonds | 14]],
+          ]
+        )
+      ),
+      'two have straight flushes'
+    ).toEqual([['user:11-high'], ['user:6-high'], ['user:straight']])
+  })
+
+  it('handles `RoyalFlush`', () => {
+    expect(
+      cards.sortHands(
+        generate(
+          toHex([Clubs | 11, Clubs | 10, Clubs | 9, Clubs | 8, Hearts | 7]),
+          [
+            ['straight-flush', [Clubs | 13, Diamonds | 7]],
+            ['royal-flush', [Clubs | 14, Clubs | 13]],
+            ['straight', [Diamonds | 13, Diamonds | 14]],
+          ]
+        )
+      ),
+      'one has a straight flush'
+    ).toEqual([
+      ['user:royal-flush'],
+      ['user:straight-flush'],
+      ['user:straight'],
     ])
   })
 })

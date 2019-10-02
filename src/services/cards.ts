@@ -282,7 +282,7 @@ export const sortHands = (turn: ActionRunning['turn']) => {
     },
     n(HandEnum.HighCard + 1).map(() => [] as any) as Element[]
   )
-  const sorted = reduced.map((order: Element, index: number) => {
+  const sorted = reduced.map((order, index) => {
     if (order.length <= 1) {
       return order
     }
@@ -385,19 +385,17 @@ const getSuit = (parsed: HandParsed['parsed']) =>
 
 export const getHandOrder = (hand: HandEnum): HandOrder => {
   switch (hand) {
-    case HandEnum.RoyalFlush:
-      return (a, b) => -1
-    case HandEnum.StraightFlush:
-      return (a, b) => {
-        return -1
-      }
     case HandEnum.FourOfAKind: {
       return ([, { parsed: a }], [, { parsed: b }]) =>
-        each(a.fourOfAKinds, b.fourOfAKinds)
+        each(a.fourOfAKinds, b.fourOfAKinds) ||
+        each(a.threeOfAKinds, b.threeOfAKinds) ||
+        each(a.pairs, b.pairs)
     }
     case HandEnum.FullHouse:
       return ([, { parsed: a }], [, { parsed: b }]) =>
         each(a.threeOfAKinds, b.threeOfAKinds) || each(a.pairs, b.pairs)
+    case HandEnum.RoyalFlush:
+    case HandEnum.StraightFlush:
     case HandEnum.Flush:
       return ([, { parsed: a }], [, { parsed: b }]) =>
         each(getSuit(a), getSuit(b))
