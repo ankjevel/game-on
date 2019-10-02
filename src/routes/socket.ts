@@ -65,7 +65,6 @@ subscribe('update:action:*', event => {
         })
       }
 
-      console.log('update:action', socket.id, message.id)
       socket.emit('update:action', message)
     }
   } catch (error) {
@@ -132,6 +131,11 @@ export const listen = (io: SocketIO.Server) => {
         id: user.id,
         name: user.name,
       })
+    })
+
+    client.on('user:leave', () => {
+      console.log(id, 'user:leave')
+      leave(client)
     })
 
     client.on(
