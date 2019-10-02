@@ -451,32 +451,30 @@ export const handleUpdate = async (
 
     action.round = 4
     debug.endAction({ action, group })
-    return
   }
-
-  debug.endAction({ action, group })
 
   if (round !== action.round) {
     maybeDealCards(action, group, round)
+    Object.keys(action.turn).forEach(key => {
+      const user = action.turn[key]
+      const { onHand, parsed, highCards } = checkHand(
+        action.communityCards,
+        user.cards || []
+      )
+      user.hand = onHand.slice(0, 1)[0]
+      user.handParsed = {
+        parsed,
+        highCards,
+        onHand,
+      }
+    })
   }
 
-  Object.keys(action.turn).forEach(key => {
-    const user = action.turn[key]
-    const { onHand, parsed, highCards } = checkHand(
-      action.communityCards,
-      user.cards || []
-    )
-    user.hand = onHand.slice(0, 1)[0]
-    user.handParsed = {
-      parsed,
-      highCards,
-      onHand,
-    }
-  })
-
-  if (round === 4) {
+  if (action.round === 4) {
     action.winners = sortHands(action.turn)
   }
+
+  debug.endAction({ action, group })
 
   await dataStore.update(action.id, action, 'action:running')
   await dataStore.update(group.id, group, 'group')
@@ -788,8 +786,6 @@ export const handleConfirmation = async (
     )
   )
   console.log('action.round === 4', newAction)
-  // console.log(action)
-  // console.log(group)
 }
 
 mainLoop(CHANNEL, async maybeMessage => {

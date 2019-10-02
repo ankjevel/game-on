@@ -269,19 +269,21 @@ export const hasStraight = (cards: number[]) => {
 
 export const sortHands = (turn: ActionRunning['turn']) => {
   const tied: Tied[] = []
-  const reduced = Object.entries(turn).reduce(
-    (order, [id, { handParsed }]) => {
-      order[
-        handParsed == null ||
-        Array.isArray(handParsed.onHand) === false ||
-        !handParsed.onHand.length
-          ? HandEnum.HighCard
-          : handParsed.onHand[0]
-      ].push([id, handParsed] as any)
-      return order
-    },
-    n(HandEnum.HighCard + 1).map(() => [] as any) as Element[]
-  )
+  const reduced = Object.entries(turn)
+    .filter(([, summary]) => summary.status !== 'fold')
+    .reduce(
+      (order, [id, { handParsed }]) => {
+        order[
+          handParsed == null ||
+          Array.isArray(handParsed.onHand) === false ||
+          !handParsed.onHand.length
+            ? HandEnum.HighCard
+            : handParsed.onHand[0]
+        ].push([id, handParsed] as any)
+        return order
+      },
+      n(HandEnum.HighCard + 1).map(() => [] as any) as Element[]
+    )
   const sorted = reduced.map((order, index) => {
     if (order.length <= 1) {
       return order
