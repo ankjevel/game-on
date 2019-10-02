@@ -1,7 +1,11 @@
 import { StoreTypes, ActionRunning } from 'dataStore'
 import Route from 'Route'
 
-import { getWrapper, isStoreType } from '../services/dataStore'
+import {
+  getWrapper,
+  isStoreType,
+  cleanUserSummary,
+} from '../services/dataStore'
 import { getPublicGroups } from '../services/group'
 import { nullOrEmpty, hasProp } from '../utils'
 
@@ -48,14 +52,7 @@ export const register: Route = (app, auth) => {
       }
 
       if (isActionRunning(maybeType, data) && data.round !== 4) {
-        Object.entries(data.turn).forEach(([userID, userSummary]) => {
-          if (user && user.id == userID) {
-            return
-          }
-
-          delete userSummary.cards
-          delete userSummary.hand
-        })
+        cleanUserSummary(data.turn, user)
       }
 
       res.send(data)

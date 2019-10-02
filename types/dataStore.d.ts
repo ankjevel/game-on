@@ -1,3 +1,5 @@
+import { Sorted, SameObject, Hand, Card } from 'cards'
+
 export interface Action {
   id: string
 }
@@ -22,6 +24,7 @@ export interface ActionRunning extends Action {
   deck: Deck
   communityCards: string[]
   sidePot?: { id: User['id']; sum: number }[]
+  winners?: User['id'][]
 }
 
 export type Deck = Tuple<MaybeNull<string>, 52>
@@ -81,6 +84,7 @@ export type NewActionEnum =
   | 'join'
   | 'leave'
   | 'sittingOut'
+  | 'confirm'
 
 export type NewAction = {
   type: NewActionEnum
@@ -88,11 +92,32 @@ export type NewAction = {
   order?: User['id'][][]
 }
 
+export type HandParsed = {
+  parsed: {
+    cards: Sorted
+    flush: {
+      spades: boolean
+      hearts: boolean
+      diamonds: boolean
+      clubs: boolean
+    }
+    fourOfAKinds: string[]
+    pairs: string[]
+    same: SameObject
+    straightFlushes: string[]
+    straightHigh?: string
+    threeOfAKinds: string[]
+  }
+  highCards: Card[]
+  onHand: Hand[]
+}
+
 export type UserSummary = {
   bet: number
   status: NewActionEnum
   cards?: [string, string]
-  hand?: number // Hands
+  hand?: Hand
+  handParsed?: HandParsed
 }
 
 export type Check = <T>(result: T) => boolean

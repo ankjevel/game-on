@@ -1,32 +1,11 @@
-import { Suit } from 'cards'
-import { MutableDeck, Deck } from 'dataStore'
+import { Suit, Sorted, SameObject, Hand, Card } from 'cards'
+import { MutableDeck, Deck, ActionRunning, HandParsed } from 'dataStore'
 
-type Sorted = {
-  spades: number[]
-  hearts: number[]
-  diamonds: number[]
-  clubs: number[]
-}
-
-type SameObject = {
-  1: number
-  2: number
-  3: number
-  4: number
-  5: number
-  6: number
-  7: number
-  8: number
-  9: number
-  10: number
-  11: number
-  13: number
-  14: number
-}
+import { n, clone } from '../utils'
 
 type Cards = string[]
 
-export enum Hand {
+export enum HandEnum {
   RoyalFlush = 0,
   StraightFlush = 1,
   FourOfAKind = 2,
@@ -51,11 +30,11 @@ export enum Enum {
 }
 
 const defaultSameObject = () =>
-  [...Array(14)].reduce((x, _, i) => {
+  clone(n(14).reduce((x, _, i) => {
     if (i === 11) return x
     x[i + 1] = 0
     return x
-  }, {}) as SameObject
+  }, {}) as SameObject)
 
 const defaultFlushObject = () => ({
   spades: false,
@@ -84,7 +63,7 @@ const getHEX = (suit: Suit): number => {
 }
 
 const genCards = (hex: number) =>
-  [...new Array(14)]
+  n(14)
     .map((_, i) => {
       if (i === 11) {
         // 11 is Knight
@@ -121,7 +100,7 @@ export const newDeck = () => DECK.slice(0) as Deck
 export const takeCards = <T>(deck: MutableDeck, take: number): T => {
   const result: string[] = []
 
-  for (const _ of Array(take).fill(undefined)) {
+  for (const _ of n(take)) {
     let cards = deck.filter(x => typeof x === 'string')
 
     if (cards.length < 1) {
@@ -145,7 +124,7 @@ export const takeCards = <T>(deck: MutableDeck, take: number): T => {
   return (result as unknown) as T
 }
 
-export const sortCards = (cards: number[]) =>
+export const sortCards = (cards: Card[]) =>
   Object.entries(
     cards.reduce(
       (suits: Sorted, card) => {
@@ -177,7 +156,7 @@ export const sortCards = (cards: number[]) =>
 
 export const parseHand = (communityCards: Cards, hand: Cards) => {
   const cards = sortCards(
-    [...communityCards, ...hand].map(card => parseInt(card, 16))
+    [...communityCards, ...hand].map(card => parseInt(card, 16) as Card)
   )
   const flush = Object.entries(cards).reduce((flush, [suit, cards]) => {
     flush[suit] = cards.length >= 5
@@ -198,7 +177,7 @@ export const parseHand = (communityCards: Cards, hand: Cards) => {
     .filter(([, amount]) => amount === 4)
     .map(([card]) => card)
   const straightFlushes = Object.entries(flush)
-    .filter(([suit, isFlush]) => isFlush && hasStraight(cards[suit]))
+    .filter(([suit, isFlush]) => isFlush && hasStraight(cards[suit])[0])
     .map(([suit]) => suit)
 
   return {
@@ -209,7 +188,7 @@ export const parseHand = (communityCards: Cards, hand: Cards) => {
     threeOfAKinds,
     fourOfAKinds,
     straightFlushes,
-  }
+  } as HandParsed['parsed']
 }
 
 const straightOrders = [
@@ -244,34 +223,154 @@ const straightOrders = [
 ]
 
 const sliceAndCheck = (cards: number[], index: number, orderIndex: number) => {
-  const slice = cards.slice(index, cards.length).slice(0, 5)
-  return (
+  const slice: number[] = cards.slice(index, cards.length).slice(0, 5)
+
+  const hasStraight =
     slice.length >= 5 &&
     slice.every(
       (card, i, cards) =>
         i === 0 || straightOrders[orderIndex][card] === cards[i - 1]
     )
-  )
+
+  return [hasStraight, slice]
 }
 
-export const hasStraight = (cards: number[]) =>
-  cards.sort(sort).some((_, i, cards) => sliceAndCheck(cards, i, 0)) ||
-  cards.sort(sortAceLast).some((_, i, cards) => sliceAndCheck(cards, i, 1))
+export const hasStraight = (cards: number[]) => {
+  let straight: number[] = []
+
+  const hasStraight =
+    cards.sort(sort).some((_, i, cards) => {
+      const [hasStraight, result] = sliceAndCheck(cards, i, 0)
+      if (hasStraight) {
+        straight = result as any
+      }
+      return hasStraight
+    }) ||
+    cards.sort(sortAceLast).some((_, i, cards) => {
+      const [hasStraight, result] = sliceAndCheck(cards, i, 1)
+      if (hasStraight) {
+        straight = result as any
+      }
+      return hasStraight
+    })
+
+  return [hasStraight, straight]
+}
+
+type Element = [string, HandParsed]
+
+interface HandOrder {
+  (a: Element, b: Element): 0 | 1 | -1
+}
+
+export const sortHands = (turn: ActionRunning['turn']) => {
+  const reduced = Object.entries(turn).reduce(
+    (order, [id, { handParsed }]) => {
+      order[
+        handParsed == null ||
+        Array.isArray(handParsed.onHand) === false ||
+        !handParsed.onHand.length
+          ? HandEnum.HighCard
+          : handParsed.onHand[0]
+      ].push([id, handParsed] as any)
+      return order
+    },
+    n(HandEnum.HighCard + 1).map(() => [] as any) as Element[]
+  )
+
+  return reduced
+    .map((order, index) => {
+      if (order.length <= 1) {
+        return order
+      }
+      return order.sort(getHandOrder(index) as any)
+    })
+    .filter(x => x)
+    .flatMap(x => x.map(([id]: any) => id))
+}
+
+interface SortHigh {
+  (a?: number | string, b?: number | string): 0 | 1 | -1
+}
+
+const sortHigh: SortHigh = (a, b) => {
+  const aParsed = typeof a === 'number' ? a : parseInt(a || '-1')
+  const bParsed = typeof b === 'number' ? b : parseInt(b || '-1')
+  const aValue = aParsed === 1 ? 15 : aParsed
+  const bValue = bParsed === 1 ? 15 : bParsed
+  return aValue > bValue ? -1 : bValue > aValue ? 1 : 0
+}
+
+const each = (a: any[], b: any[], check: SortHigh = sortHigh) => {
+  let high: 0 | 1 | -1 = 0
+  for (const i of n(Math.max(a.length, b.length))) {
+    const res = check(a[i], b[i])
+    if (res === 0) continue
+    high = res
+    break
+  }
+  return high
+}
+
+const getSuit = (parsed: HandParsed['parsed']) =>
+  (parsed.cards[
+    Object.entries(parsed.flush)
+      .filter(x => x[1])
+      .map(x => x[0]) as any
+  ] || []) as number[]
+
+export const getHandOrder = (hand: HandEnum): HandOrder => {
+  console.log({ hand })
+  switch (hand) {
+    case HandEnum.RoyalFlush:
+      return (a, b) => -1
+    case HandEnum.StraightFlush:
+      return (a, b) => {
+        console.log({ a, b })
+        return -1
+      }
+    case HandEnum.FourOfAKind: {
+      console.log('FourOfAKind')
+      return ([, { parsed: a }], [, { parsed: b }]) => {
+        console.log(a, b)
+        return each(a.fourOfAKinds, b.fourOfAKinds)
+      }
+    }
+    case HandEnum.FullHouse:
+      return ([, { parsed: a }], [, { parsed: b }]) =>
+        each(a.threeOfAKinds, b.threeOfAKinds) || each(a.pairs, b.pairs)
+    case HandEnum.Flush:
+      return ([, { parsed: a }], [, { parsed: b }]) =>
+        each(getSuit(a), getSuit(b))
+    case HandEnum.Straight:
+      return ([, { parsed: a }], [, { parsed: b }]) =>
+        sortHigh(a.straightHigh, b.straightHigh)
+    case HandEnum.ThreeOfAKind:
+      return ([, { parsed: a }], [, { parsed: b }]) =>
+        each(a.threeOfAKinds, b.threeOfAKinds)
+    case HandEnum.TwoPair:
+    case HandEnum.Pair:
+      return ([, { parsed: a }], [, { parsed: b }]) => each(a.pairs, b.pairs)
+    case HandEnum.HighCard:
+      return ([, { highCards: a }], [, { highCards: b }]) => each(a, b)
+    default:
+      throw new Error('hand not defined')
+  }
+}
 
 export const checkHand = (communityCards: Cards, hand: Cards) => {
   const parsed = parseHand(communityCards, hand)
   const cards = [...new Set(Object.values(parsed.cards).flatMap(x => x))].sort(
     sort
   )
-
   const highCards = cards
     .slice(0)
     .sort(sortAceLast)
-    .reverse()
+    .reverse() as Card[]
   const pair = parsed.pairs.length >= 1
   const twoPair = parsed.pairs.length >= 2
   const threeOfAKind = parsed.threeOfAKinds.length >= 1
-  const straight = hasStraight(cards.slice(0))
+  const [hadStraight, straight] = hasStraight(cards.slice(0))
   const flush = Object.values(parsed.flush).some(flush => flush)
   const fullHouse = parsed.pairs.length >= 1 && parsed.threeOfAKinds.length >= 1
   const fourOfAKind = parsed.fourOfAKinds.length >= 1
@@ -284,16 +383,18 @@ export const checkHand = (communityCards: Cards, hand: Cards) => {
     )
     .some(bool => bool)
 
+  parsed.straightHigh = ((straight as number[]) || []).pop() as any
+
   const onHand = [
-    [Hand.RoyalFlush, royalFlush],
-    [Hand.StraightFlush, straightFlush],
-    [Hand.FourOfAKind, fourOfAKind],
-    [Hand.FullHouse, fullHouse],
-    [Hand.Flush, flush],
-    [Hand.Straight, straight],
-    [Hand.ThreeOfAKind, threeOfAKind],
-    [Hand.TwoPair, twoPair],
-    [Hand.Pair, pair],
+    [HandEnum.RoyalFlush, royalFlush],
+    [HandEnum.StraightFlush, straightFlush],
+    [HandEnum.FourOfAKind, fourOfAKind],
+    [HandEnum.FullHouse, fullHouse],
+    [HandEnum.Flush, flush],
+    [HandEnum.Straight, hadStraight],
+    [HandEnum.ThreeOfAKind, threeOfAKind],
+    [HandEnum.TwoPair, twoPair],
+    [HandEnum.Pair, pair],
   ]
     .filter(([, hasOnHand]) => hasOnHand)
     .map(([hand]) => hand) as Hand[]

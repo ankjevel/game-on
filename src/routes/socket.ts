@@ -4,6 +4,7 @@ import { verify } from 'jsonwebtoken'
 
 import { hasProp, clone } from '../utils'
 import config from '../config'
+import { cleanUserSummary } from '../services/dataStore'
 import { getGroupForUser } from '../services/group'
 import { subscribe } from '../services/pubsub'
 import parse from '../utils/parse'
@@ -58,11 +59,7 @@ subscribe('update:action:*', event => {
         if (!user) continue
 
         message.turn = clone(turn)
-        Object.entries(message.turn).forEach(([userID, userSummary]) => {
-          if (user.id === userID) return
-          delete userSummary.cards
-          delete userSummary.hand
-        })
+        cleanUserSummary(message.turn, user)
       }
 
       socket.emit('update:action', message)

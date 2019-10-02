@@ -223,6 +223,7 @@ export const isNewActionType = (any: any): any is NewActionEnum => {
     case 'raise':
     case 'sittingOut':
     case 'winner':
+    case 'confirm':
       return true
     default:
       return false
@@ -256,6 +257,7 @@ export const isNewAction = (
     case 'fold':
     case 'none':
     case 'sittingOut':
+    case 'confirm':
       return isNumber(any.value) === false
     case 'draw':
     case 'winner':
@@ -343,3 +345,19 @@ export const isActionRunning = (
   (Array.isArray(any.sittingOut)
     ? any.sittingOut.every(user => checkId(user, 'user'))
     : true)
+
+export const cleanUserSummary = (
+  turn: ActionRunning['turn'],
+  user?: User | UserWithOutPassword
+) => {
+  if (user == null) {
+    return
+  }
+
+  Object.entries(turn).forEach(([userID, userSummary]) => {
+    if (user.id === userID) return
+    delete userSummary.cards
+    delete userSummary.hand
+    delete userSummary.handParsed
+  })
+}

@@ -21,7 +21,7 @@ import * as dataStore from './dataStore'
 import { pushSession } from './session'
 import { parse, hasProp, clone, debug } from '../utils'
 import mainLoop from './messageListener'
-import { newDeck, takeCards, checkHand } from './cards'
+import { newDeck, takeCards, checkHand, sortHands } from './cards'
 
 const CHANNEL = 'message'
 
@@ -68,9 +68,7 @@ export const newAction = async ({
     group == null ||
     group.users.some(user => user.id === userID) === false ||
     group.action !== action.id ||
-    (action.round === 4 &&
-      group.owner !== userID &&
-      (newAction.type !== 'winner' && newAction.type !== 'draw'))
+    (action.round === 4 && newAction.type !== 'confirm')
   ) {
     return
   }
@@ -308,6 +306,7 @@ export const handleUpdate = async (
       player.status = 'fold'
       player.cards = undefined
       player.hand = undefined
+      player.handParsed = undefined
       break
     }
 
@@ -475,8 +474,16 @@ export const handleUpdate = async (
 
   Object.keys(action.turn).forEach(key => {
     const user = action.turn[key]
-    const hand = checkHand(action.communityCards, user.cards || [])
-    user.hand = hand.onHand.slice(0, 1)[0]
+    const { onHand, parsed, highCards } = checkHand(
+      action.communityCards,
+      user.cards || []
+    )
+    user.hand = onHand.slice(0, 1)[0]
+    user.handParsed = {
+      parsed,
+      highCards,
+      onHand,
+    }
   })
 
   await dataStore.update(action.id, action, 'action:running')
@@ -773,6 +780,27 @@ export const handleEndRound = async (
   }
 }
 
+export const handleConfirmation = async (
+  action: ActionRunning,
+  group: Group,
+  newAction: Message['newAction']
+) => {
+  console.log(
+    JSON.stringify(
+      {
+        action,
+        group,
+      },
+      null,
+      2
+    )
+  )
+  console.log('action.round === 4', newAction)
+  sortHands(action.turn)
+  // console.log(action)
+  // console.log(group)
+}
+
 mainLoop(CHANNEL, async maybeMessage => {
   const message = parse<Message>(maybeMessage)
   if (!isMessage(message)) {
@@ -807,14 +835,8 @@ mainLoop(CHANNEL, async maybeMessage => {
 
   // TODO: wait for confirmations
   if (action.round === 4) {
-    if (
-      group.owner === message.userID &&
-      (message.newAction.type === 'draw' || message.newAction.type === 'winner')
-    ) {
-      return handleEndRound(action, group, message.newAction)
-    }
-
     console.info(action.id, 'group is in showdown')
+    await handleConfirmation(action, group, message.newAction)
     return
   }
 
