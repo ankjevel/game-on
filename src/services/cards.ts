@@ -387,9 +387,7 @@ export const getHandOrder = (hand: HandEnum): HandOrder => {
   switch (hand) {
     case HandEnum.FourOfAKind: {
       return ([, { parsed: a }], [, { parsed: b }]) =>
-        each(a.fourOfAKinds, b.fourOfAKinds) ||
-        each(a.threeOfAKinds, b.threeOfAKinds) ||
-        each(a.pairs, b.pairs)
+        each(a.fourOfAKinds, b.fourOfAKinds)
     }
     case HandEnum.FullHouse:
       return ([, { parsed: a }], [, { parsed: b }]) =>
