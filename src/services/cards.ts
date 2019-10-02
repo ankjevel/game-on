@@ -168,13 +168,13 @@ export const parseHand = (communityCards: Cards, hand: Cards) => {
   }, defaultSameObject())
   const sameEntries = Object.entries(same)
   const pairs = sameEntries
-    .filter(([, amount]) => amount === 2)
+    .filter(([, amount]) => amount >= 2)
     .map(([card]) => card)
   const threeOfAKinds = sameEntries
-    .filter(([, amount]) => amount === 3)
+    .filter(([, amount]) => amount >= 3)
     .map(([card]) => card)
   const fourOfAKinds = sameEntries
-    .filter(([, amount]) => amount === 4)
+    .filter(([, amount]) => amount >= 4)
     .map(([card]) => card)
   const straightFlushes = Object.entries(flush)
     .filter(([suit, isFlush]) => isFlush && hasStraight(cards[suit])[0])
@@ -258,6 +258,7 @@ export const hasStraight = (cards: number[]) => {
 }
 
 type Element = [string, HandParsed]
+type Tied = { index: number; insertInto: number; data: Element[] }
 
 interface HandOrder {
   (a: Element, b: Element): 0 | 1 | -1
@@ -278,15 +279,93 @@ export const sortHands = (turn: ActionRunning['turn']) => {
     n(HandEnum.HighCard + 1).map(() => [] as any) as Element[]
   )
 
-  return reduced
-    .map((order, index) => {
-      if (order.length <= 1) {
-        return order
+  const tied: Tied[] = []
+  let sorted: Element[] = []
+
+  const forEach = (order: Element, index: number) => {
+    if (order.length <= 1) {
+      return order
+    }
+
+    const sort = order.sort((a: any, b: any) => {
+      const sortOrder = getHandOrder(index)(a, b)
+
+      if (sortOrder === 0) {
+        const _a = order.splice(order.indexOf(a), 1).pop() as any
+        const _b = order.splice(order.indexOf(b), 1).pop() as any
+
+        const insertInto = order.length
+          ? getHandOrder(index)(_a, order[0] as any)
+          : index
+
+        tied.push({
+          index,
+          insertInto: index + insertInto,
+          data: [_a, _b],
+        } as any)
       }
-      return order.sort(getHandOrder(index) as any)
+
+      return sortOrder
     })
-    .filter(x => x)
-    .flatMap(x => x.map(([id]: any) => id))
+
+    return sort
+  }
+
+  sorted = reduced.map(forEach)
+
+  while (tied.length > 0) {
+    if (tied.length === 0) {
+      break
+    }
+
+    let element: MaybeUndefined<Tied>
+
+    while ((element = tied.pop())) {
+      if (element == null) {
+        break
+      }
+
+      const { index, insertInto, data } = element
+      for (const element of data) {
+        sorted[index].splice(sorted[index].indexOf(element as any), 1)
+      }
+
+      const next = index + 1
+      const last = next === HandEnum.HighCard + 1
+
+      if (last) {
+        sorted.splice(insertInto, 0, [data] as any)
+        break
+      }
+
+      const compared = getHandOrder(next)(data[0], data[1])
+
+      if (compared === 0) {
+        tied.push({ index: next, insertInto, data })
+      } else {
+        console.log('hande this case', data, compared)
+      }
+
+      if (last) {
+        break
+      }
+    }
+  }
+
+  return sorted
+    .filter(x => x.length)
+    .reduce(
+      (array, element: any) =>
+        array.concat(
+          element.map((inner: Element | Element[]) => {
+            if (Array.isArray(inner[0])) {
+              return (inner as Element[]).map(e => e[0])
+            }
+            return [inner[0]]
+          })
+        ),
+      [] as string[][]
+    )
 }
 
 interface SortHigh {
@@ -320,21 +399,16 @@ const getSuit = (parsed: HandParsed['parsed']) =>
   ] || []) as number[]
 
 export const getHandOrder = (hand: HandEnum): HandOrder => {
-  console.log({ hand })
   switch (hand) {
     case HandEnum.RoyalFlush:
       return (a, b) => -1
     case HandEnum.StraightFlush:
       return (a, b) => {
-        console.log({ a, b })
         return -1
       }
     case HandEnum.FourOfAKind: {
-      console.log('FourOfAKind')
-      return ([, { parsed: a }], [, { parsed: b }]) => {
-        console.log(a, b)
-        return each(a.fourOfAKinds, b.fourOfAKinds)
-      }
+      return ([, { parsed: a }], [, { parsed: b }]) =>
+        each(a.fourOfAKinds, b.fourOfAKinds)
     }
     case HandEnum.FullHouse:
       return ([, { parsed: a }], [, { parsed: b }]) =>
@@ -354,7 +428,7 @@ export const getHandOrder = (hand: HandEnum): HandOrder => {
     case HandEnum.HighCard:
       return ([, { highCards: a }], [, { highCards: b }]) => each(a, b)
     default:
-      throw new Error('hand not defined')
+      throw new Error(`Hand not defined (${hand})`)
   }
 }
 

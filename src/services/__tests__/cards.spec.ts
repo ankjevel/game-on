@@ -178,10 +178,10 @@ describe.only('#sortHands', () => {
         )
       ),
       'handles HighCards'
-    ).toEqual(['user:A-high', 'user:K-high', 'user:8-high'])
+    ).toEqual([['user:A-high'], ['user:K-high'], ['user:8-high']])
   })
 
-  it('handles the order where two players have `Pair|TwoPair`', () => {
+  it('handles `Pair|TwoPair`', () => {
     expect(
       cards.sortHands(
         generate(
@@ -194,7 +194,7 @@ describe.only('#sortHands', () => {
         )
       ),
       'handles TwoPair'
-    ).toEqual(['user:A-high', 'user:K-high', 'user:J-high'])
+    ).toEqual([['user:A-high'], ['user:K-high'], ['user:J-high']])
 
     expect(
       cards.sortHands(
@@ -208,10 +208,27 @@ describe.only('#sortHands', () => {
         )
       ),
       'handles Pair'
-    ).toEqual(['user:A-high', 'user:K-high', 'user:none'])
+    ).toEqual([['user:A-high'], ['user:K-high'], ['user:none']])
+
+    expect(
+      cards.sortHands(
+        generate(
+          toHex([Clubs | 13, Clubs | 10, Diamonds | 11, Spades | 6, Clubs | 5]),
+          [
+            ['Hearts-Diamonds', [Hearts | 14, Diamonds | 14]],
+            ['Spades-Clubs', [Spades | 14, Clubs | 14]],
+            ['2-high', [Diamonds | 2, Hearts | 2]],
+          ]
+        )
+      ),
+      'handles a draw'
+    ).toEqual([
+      expect.arrayContaining(['user:Hearts-Diamonds', 'user:Spades-Clubs']),
+      ['user:2-high'],
+    ])
   })
 
-  it('handles the order where two players have `Straight`', () => {
+  it('handles `Straight`', () => {
     const communityCards: string[] = toHex([
       Clubs | 13,
       Clubs | 10,
@@ -228,7 +245,7 @@ describe.only('#sortHands', () => {
           ['pair', [Spades | 5, Spades | 4]],
         ])
       )
-    ).toEqual(['user:K-high', 'user:Q-high', 'user:pair'])
+    ).toEqual([['user:K-high'], ['user:Q-high'], ['user:pair']])
 
     expect(
       cards.sortHands(
@@ -238,10 +255,10 @@ describe.only('#sortHands', () => {
           ['pair', [Spades | 5, Spades | 4]],
         ])
       )
-    ).toEqual(['user:A-high', 'user:K-high', 'user:pair'])
+    ).toEqual([['user:A-high'], ['user:K-high'], ['user:pair']])
   })
 
-  it('handles the order where two players have `Flush`', () => {
+  it('handles `Flush`', () => {
     expect(
       cards.sortHands(
         generate(
@@ -253,22 +270,22 @@ describe.only('#sortHands', () => {
           ]
         )
       )
-    ).toEqual(['user:A-high', 'user:K-high', 'user:pair'])
+    ).toEqual([['user:A-high'], ['user:K-high'], ['user:pair']])
   })
 
-  it.only('handles the order where two players have `FourOfAKind`', () => {
-    // expect(
-    //   cards.sortHands(
-    //     generate(
-    //       toHex([Clubs | 2, Spades | 2, Hearts | 2, Diamonds | 6, Hearts | 6]),
-    //       [
-    //         ['2-high', [Diamonds | 2, Clubs | 3]],
-    //         ['6-high', [Spades | 6, Clubs | 6]],
-    //         ['none', [Clubs | 3, Hearts | 4]],
-    //       ]
-    //     )
-    //   )
-    // ).toEqual(['user:6-high', 'user:2-high', 'user:none'])
+  it('handles `FourOfAKind`', () => {
+    expect(
+      cards.sortHands(
+        generate(
+          toHex([Clubs | 2, Spades | 2, Hearts | 2, Diamonds | 6, Hearts | 6]),
+          [
+            ['2-high', [Diamonds | 2, Clubs | 3]],
+            ['6-high', [Spades | 6, Clubs | 6]],
+            ['none', [Clubs | 3, Hearts | 4]],
+          ]
+        )
+      )
+    ).toEqual([['user:6-high'], ['user:2-high'], ['user:none']])
 
     expect(
       cards.sortHands(
@@ -282,9 +299,9 @@ describe.only('#sortHands', () => {
         )
       )
     ).toEqual([
-      'user:four-of-kind',
-      'user:full-house-6-high',
-      'user:full-house-6-high-low',
+      ['user:four-of-kind'],
+      ['user:full-house-6-high'],
+      ['user:full-house-6-high-low'],
     ])
   })
 })
