@@ -427,7 +427,7 @@ export const checkHand = (communityCards: Cards, hand: Cards) => {
   const threeOfAKind = parsed.threeOfAKinds.length >= 1
   const [hadStraight, straight] = hasStraight(cards.slice(0))
   const flush = Object.values(parsed.flush).some(flush => flush)
-  const fullHouse = parsed.pairs.length >= 1 && parsed.threeOfAKinds.length >= 1
+  const fullHouse = parsed.pairs.length >= 2 && parsed.threeOfAKinds.length >= 1
   const fourOfAKind = parsed.fourOfAKinds.length >= 1
   const straightFlush = parsed.straightFlushes.length >= 1
   const royalFlush = parsed.straightFlushes

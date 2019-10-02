@@ -92,6 +92,22 @@ describe('#checkHand', () => {
     )
   })
 
+  it('gets `threeOfAKind` and not `fullHouse`', () => {
+    const hand = [Enum.Spades | 1, Enum.Clubs | 1]
+    const communityCards = [
+      Enum.Diamonds | 1,
+      Enum.Hearts | 2,
+      Enum.Clubs | 3,
+      Enum.Clubs | 5,
+      Enum.Clubs | 10,
+    ]
+
+    expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual([
+      HandEnum.ThreeOfAKind,
+      HandEnum.Pair,
+    ])
+  })
+
   it('gets `threeOfAKind` and `fullHouse`', () => {
     const hand = [Enum.Spades | 1, Enum.Clubs | 1]
     const communityCards = [
@@ -102,13 +118,12 @@ describe('#checkHand', () => {
       Enum.Clubs | 10,
     ]
 
-    expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual(
-      expect.arrayContaining([
-        HandEnum.Pair,
-        HandEnum.FullHouse,
-        HandEnum.ThreeOfAKind,
-      ])
-    )
+    expect(cards.checkHand(toHex(communityCards), toHex(hand)).onHand).toEqual([
+      HandEnum.FullHouse,
+      HandEnum.ThreeOfAKind,
+      HandEnum.TwoPair,
+      HandEnum.Pair,
+    ])
   })
 
   it('gets a royal flush', () => {

@@ -415,11 +415,6 @@ export const handleUpdate = async (
     nextUserID === currentBig
   ) {
     ++action.round
-    if (action.round === 4) {
-      console.info(action.id, 'showdown!\n\n')
-    } else {
-      console.info(action.id, 'new round\n\n')
-    }
   }
 
   if (action.queued[userID]) {
@@ -452,16 +447,9 @@ export const handleUpdate = async (
       ) {
         break maybeEnd
       }
-      action.round = 4
-      console.info(action.id, 'showdown; contains all-in')
-      break maybeEnd
     }
 
-    console.info(action.id, `showdown; winner ${action.big}`)
-    await handleEndRound(action, group, {
-      type: 'winner',
-      order: [[action.big]],
-    })
+    action.round = 4
     debug.endAction({ action, group })
     return
   }
@@ -485,6 +473,10 @@ export const handleUpdate = async (
       onHand,
     }
   })
+
+  if (round === 4) {
+    action.winners = sortHands(action.turn)
+  }
 
   await dataStore.update(action.id, action, 'action:running')
   await dataStore.update(group.id, group, 'group')
@@ -796,7 +788,6 @@ export const handleConfirmation = async (
     )
   )
   console.log('action.round === 4', newAction)
-  sortHands(action.turn)
   // console.log(action)
   // console.log(group)
 }
