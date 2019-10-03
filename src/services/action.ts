@@ -752,19 +752,32 @@ export const handleEndRound = async (action: ActionRunning, group: Group) => {
 export const handleConfirmation = async (
   action: ActionRunning,
   group: Group,
-  newAction: Message['newAction']
+  message: Message
 ) => {
-  console.log(
-    JSON.stringify(
-      {
-        action,
-        group,
-      },
-      null,
-      2
-    )
-  )
-  console.log('action.round === 4', newAction)
+  const ownerOverride =
+    message.newAction.type === 'forceConfirmAll' &&
+    message.userID === group.owner
+
+  if (message.newAction.type !== 'confirm' && !ownerOverride) {
+    return
+  }
+
+  if (ownerOverride) {
+    Object.keys(action.turn).forEach(key => {
+      action.turn[key].status = 'confirm'
+    })
+  } else {
+    action.turn[message.userID].status = 'confirm'
+  }
+
+  if (
+    Object.values(action.turn).every(
+      summary => summary.status === 'confirm'
+    ) === false
+  ) {
+    return await dataStore.update(action.id, action, 'action:running')
+  }
+
   await handleEndRound(action, group)
 }
 
@@ -803,8 +816,7 @@ mainLoop(CHANNEL, async maybeMessage => {
   // TODO: wait for confirmations, then end game
   if (action.round === 4) {
     console.info(action.id, 'group is in showdown')
-    await handleConfirmation(action, group, message.newAction)
-    return
+    return await handleConfirmation(action, group, message)
   }
 
   if (message.userID !== action.button) {
