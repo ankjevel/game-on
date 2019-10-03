@@ -11,7 +11,7 @@ jest.mock('../messageListener')
 
 import * as actionService from '../action'
 import { clone } from '../../utils'
-import { checkHand } from '../cards'
+import { checkHand, sortHands } from '../cards'
 
 let action: ActionRunningWithSidePot | ActionRunning
 let users: UserWithOutPassword[]
@@ -34,7 +34,7 @@ describe('#handleEndRoundWithSidePot', () => {
     group = clone(drawFixture.group)
   })
 
-  test.only('ALL should have the same amount', async () => {
+  test('ALL should have the same amount', async () => {
     action.winners = [[users[2].id, users[0].id]]
 
     const resetAction = jest.spyOn(actionService, 'resetAction')
@@ -51,6 +51,22 @@ describe('#handleEndRoundWithSidePot', () => {
     expect(resetAction.mock.calls[0][0]).toMatchSnapshot()
 
     expect(group.users.map(user => user.sum)).toEqual([140, 140, 140])
+  })
+
+  it('will not be a draw, if api decides (pair in 7 is not as high as kings)', async () => {
+    action.winners = sortHands(action.turn)
+
+    const resetAction = jest.spyOn(actionService, 'resetAction')
+
+    expect(group.users.map(user => user.sum)).toEqual([140, 0, 0])
+
+    resetAction.mockResolvedValue(true)
+
+    await actionService.handleEndRoundWithSidePot(action as any, group)
+    expect(resetAction).toBeCalledTimes(1)
+    expect(resetAction.mock.calls[0][0]).toMatchSnapshot()
+
+    expect(group.users.map(user => user.sum)).toEqual([140, 0, 280])
   })
 })
 
