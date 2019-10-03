@@ -389,4 +389,24 @@ describe('#sortHands', () => {
       ['user:straight'],
     ])
   })
+
+  it('concludes the game', () => {
+    expect(
+      cards.sortHands(
+        generate(
+          toHex([
+            Diamonds | 7,
+            Spades | 3,
+            Spades | 6,
+            Diamonds | 6,
+            Clubs | 7,
+          ]),
+          [
+            ['player-1', [Hearts | 2, Diamonds | 8]],
+            ['player-2', [Spades | 10, Clubs | 1]],
+          ]
+        )
+      )
+    ).toEqual([['user:player-2'], ['user:player-1']])
+  })
 })

@@ -335,10 +335,14 @@ export const sortHands = (turn: ActionRunning['turn']) => {
         break
       }
 
-      if (getHandOrder(next)(data[0], data[1]) === 0) {
+      const order = getHandOrder(next)(data[0], data[1])
+      if (order === 0) {
         tied.push({ index: next, insertInto, data })
       } else {
-        console.error('unhandled case where order is not 0')
+        const result =
+          order === -1 ? [[data[0]], [data[1]]] : [[data[1]], [data[0]]]
+        sorted.splice(insertInto, 0, result as any)
+        break
       }
     }
   }
