@@ -458,6 +458,13 @@ export const handleUpdate = async (
     maybeDealCards(action, group, round)
     Object.keys(action.turn).forEach(key => {
       const user = action.turn[key]
+
+      if (user.status === 'fold') {
+        user.hand = undefined
+        user.handParsed = undefined
+        return
+      }
+
       const { onHand, parsed, highCards } = checkHand(
         action.communityCards,
         user.cards || []
