@@ -11,6 +11,7 @@ export const group: Group = {
     { id: 'user:63d94748-7134-4d5c-b3f9-612f9c0520c4', sum: 370 },
     { id: 'user:f7fefb97-1cd6-4507-b312-611d157a65bf', sum: 14 },
   ],
+  pub: true,
   action: 'action:7cc3e3d1-3f38-4b04-9d23-9de6372bc142',
 }
 
