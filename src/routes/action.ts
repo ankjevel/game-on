@@ -17,18 +17,6 @@ const input = {
       ? input.value
       : undefined
   },
-
-  order(input: NewAction): MaybeUndefined<NewAction['order']> {
-    return hasProp(input, 'order') &&
-      Array.isArray(input.order) &&
-      input.order.every(
-        order =>
-          Array.isArray(order) &&
-          order.every(winner => dataStore.checkId(winner, 'user'))
-      )
-      ? input.order
-      : undefined
-  },
 }
 
 export const register: Route = (app, auth) => {
@@ -48,7 +36,6 @@ export const register: Route = (app, auth) => {
       const action = {
         type: input.type(body),
         value: input.value(body),
-        order: input.order(body),
       }
 
       if (!dataStore.isNewAction(action, true)) {

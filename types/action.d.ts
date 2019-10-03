@@ -28,4 +28,5 @@ export type Share = {
 
 export interface ActionRunningWithSidePot extends ActionRunning {
   sidePot: NonNullable<ActionRunning['sidePot']>
+  winners: NonNullable<ActionRunning['winners']>
 }

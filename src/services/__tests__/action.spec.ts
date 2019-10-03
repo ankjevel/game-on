@@ -1,21 +1,17 @@
 import { ActionRunningWithSidePot, Message } from 'action'
-import { UserWithOutPassword, Group, NewAction, ActionRunning } from 'dataStore'
+import { UserWithOutPassword, Group, ActionRunning } from 'dataStore'
 
 import * as dataStore from '../dataStore'
-// import { pushSession } from '../session'
-// import mainLoop from '../messageListener'
-// import { newDeck, takeCards } from '../cards'
-
 import * as drawFixture from '../__fixtures__/draw.fixture'
 import * as betFoldAllInFixture from '../__fixtures__/bet-fold-all-in.fixture'
 
 jest.mock('../dataStore')
 jest.mock('../session')
 jest.mock('../messageListener')
-// jest.mock('../cards')
 
 import * as actionService from '../action'
 import { clone } from '../../utils'
+import { checkHand } from '../cards'
 
 let action: ActionRunningWithSidePot | ActionRunning
 let users: UserWithOutPassword[]
@@ -24,6 +20,7 @@ let group: Group
 let dataStoreMock: {
   [key: string]: jest.Mock
 }
+
 beforeEach(() => {
   dataStoreMock = dataStore as any
   console.log = jest.fn()
@@ -37,23 +34,23 @@ describe('#handleEndRoundWithSidePot', () => {
     group = clone(drawFixture.group)
   })
 
-  test('ALL should have the same amount', async () => {
-    const newAction: NewAction = {
-      type: 'winner',
-      order: [[users[2].id, users[0].id]],
-    }
+  test.only('ALL should have the same amount', async () => {
+    action.winners = [[users[2].id, users[0].id]]
 
     const resetAction = jest.spyOn(actionService, 'resetAction')
+
+    expect(group.users.map(user => user.sum)).toEqual([140, 0, 0])
 
     resetAction.mockResolvedValue(true)
 
     await actionService.handleEndRoundWithSidePot(
       action as ActionRunningWithSidePot,
-      group,
-      newAction
+      group
     )
     expect(resetAction).toBeCalledTimes(1)
     expect(resetAction.mock.calls[0][0]).toMatchSnapshot()
+
+    expect(group.users.map(user => user.sum)).toEqual([140, 140, 140])
   })
 })
 
@@ -72,13 +69,11 @@ describe('#handleUpdate', () => {
       userID: 'user:f7fefb97-1cd6-4507-b312-611d157a65bf',
     } as Message
 
-    const endRound = jest.spyOn(actionService, 'handleEndRound')
-
-    endRound.mockRejectedValue('should not be called')
+    expect(action.round, 'starts at round 0').toEqual(0)
 
     await actionService.handleUpdate(action as ActionRunning, group, message)
 
-    expect(endRound).not.toBeCalled()
+    expect(action.round, 'still at round 0').toEqual(0)
     expect(dataStoreMock.update).toBeCalledTimes(2)
 
     expect(dataStoreMock.update.mock.calls).toEqual(

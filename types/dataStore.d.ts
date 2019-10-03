@@ -77,19 +77,17 @@ export type NewActionEnum =
   | 'raise'
   | 'allIn'
   | 'fold'
-  | 'draw'
-  | 'winner'
   | 'back'
   | 'bank'
   | 'join'
   | 'leave'
   | 'sittingOut'
   | 'confirm'
+  | 'forceConfirmAll'
 
 export type NewAction = {
   type: NewActionEnum
   value?: number
-  order?: User['id'][][]
 }
 
 export type HandParsed = {
@@ -122,4 +120,4 @@ export type UserSummary = {
 
 export type Check = <T>(result: T) => boolean
 
-export type Order = { [order: string]: string }
+export type Order<T = string> = { [P in keyof T]: T }

@@ -89,6 +89,66 @@ Object {
           "a7",
           "b2",
         ],
+        "hand": 8,
+        "handParsed": Object {
+          "highCards": Array [
+            14,
+            11,
+            7,
+            6,
+            4,
+            2,
+          ],
+          "onHand": Array [
+            8,
+          ],
+          "parsed": Object {
+            "cards": Object {
+              "clubs": Array [
+                4,
+              ],
+              "diamonds": Array [
+                6,
+                14,
+              ],
+              "hearts": Array [
+                2,
+                7,
+              ],
+              "spades": Array [
+                7,
+                11,
+              ],
+            },
+            "flush": Object {
+              "clubs": false,
+              "diamonds": false,
+              "hearts": false,
+              "spades": false,
+            },
+            "fourOfAKinds": Array [],
+            "pairs": Array [
+              "7",
+            ],
+            "same": Object {
+              "1": 0,
+              "10": 0,
+              "11": 1,
+              "13": 0,
+              "14": 1,
+              "2": 1,
+              "3": 0,
+              "4": 1,
+              "5": 0,
+              "6": 1,
+              "7": 2,
+              "8": 0,
+              "9": 0,
+            },
+            "straightFlushes": Array [],
+            "threeOfAKinds": Array [],
+          },
+        },
         "status": "fold",
       },
       "user:63d94748-7134-4d5c-b3f9-612f9c0520c4": Object {
@@ -97,6 +157,66 @@ Object {
           "b9",
           "a4",
         ],
+        "hand": 8,
+        "handParsed": Object {
+          "highCards": Array [
+            14,
+            11,
+            9,
+            7,
+            6,
+            4,
+          ],
+          "onHand": Array [
+            8,
+          ],
+          "parsed": Object {
+            "cards": Object {
+              "clubs": Array [
+                4,
+              ],
+              "diamonds": Array [
+                6,
+                14,
+              ],
+              "hearts": Array [
+                7,
+                9,
+              ],
+              "spades": Array [
+                4,
+                11,
+              ],
+            },
+            "flush": Object {
+              "clubs": false,
+              "diamonds": false,
+              "hearts": false,
+              "spades": false,
+            },
+            "fourOfAKinds": Array [],
+            "pairs": Array [
+              "4",
+            ],
+            "same": Object {
+              "1": 0,
+              "10": 0,
+              "11": 1,
+              "13": 0,
+              "14": 1,
+              "2": 0,
+              "3": 0,
+              "4": 2,
+              "5": 0,
+              "6": 1,
+              "7": 1,
+              "8": 0,
+              "9": 1,
+            },
+            "straightFlushes": Array [],
+            "threeOfAKinds": Array [],
+          },
+        },
         "status": "allIn",
       },
       "user:f7fefb97-1cd6-4507-b312-611d157a65bf": Object {
@@ -105,9 +225,75 @@ Object {
           "de",
           "a3",
         ],
+        "hand": 8,
+        "handParsed": Object {
+          "highCards": Array [
+            14,
+            11,
+            7,
+            6,
+            4,
+            3,
+          ],
+          "onHand": Array [
+            8,
+          ],
+          "parsed": Object {
+            "cards": Object {
+              "clubs": Array [
+                4,
+                14,
+              ],
+              "diamonds": Array [
+                6,
+                14,
+              ],
+              "hearts": Array [
+                7,
+              ],
+              "spades": Array [
+                3,
+                11,
+              ],
+            },
+            "flush": Object {
+              "clubs": false,
+              "diamonds": false,
+              "hearts": false,
+              "spades": false,
+            },
+            "fourOfAKinds": Array [],
+            "pairs": Array [
+              "14",
+            ],
+            "same": Object {
+              "1": 0,
+              "10": 0,
+              "11": 1,
+              "13": 0,
+              "14": 2,
+              "2": 0,
+              "3": 1,
+              "4": 1,
+              "5": 0,
+              "6": 1,
+              "7": 1,
+              "8": 0,
+              "9": 0,
+            },
+            "straightFlushes": Array [],
+            "threeOfAKinds": Array [],
+          },
+        },
         "status": "allIn",
       },
     },
+    "winners": Array [
+      Array [
+        "user:63d94748-7134-4d5c-b3f9-612f9c0520c4",
+        "user:f7fefb97-1cd6-4507-b312-611d157a65bf",
+      ],
+    ],
   },
   "group": Object {
     "action": "action:20ffb4b3-7fab-437c-be1e-cbd0efb8e00c",
@@ -118,6 +304,7 @@ Object {
     "id": "group:016650b1-8c11-41e3-b00f-a616469a3b1b",
     "name": "super-duper-normal",
     "owner": "user:0f3bd090-e991-425a-8978-71ad27164510",
+    "pub": true,
     "startSum": 140,
     "users": Array [
       Object {

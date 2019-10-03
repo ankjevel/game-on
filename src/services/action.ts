@@ -7,6 +7,7 @@ import {
   NewAction,
   UserSummary,
   User,
+  Order,
 } from 'dataStore'
 
 import {
@@ -621,6 +622,7 @@ export const resetAction = async ({
   action.button = newSmall.id
   action.communityCards = []
   action.deck = newDeck()
+  action.winners = undefined
   action.pot = pot + group.blind.small + group.blind.big
   action.queued = {}
   action.round = 0
@@ -640,28 +642,17 @@ export const resetAction = async ({
   return true
 }
 
-const winners = (order: NonNullable<NewAction['order']>) =>
-  order.reduce((sum, order) => sum + order.length, 0)
+const winners = (winners: ActionRunningWithSidePot['winners']) =>
+  winners.reduce((sum, winners) => sum + winners.length, 0)
 
 export const handleEndRoundWithSidePot = async (
   action: ActionRunningWithSidePot,
-  group: Group,
-  newAction: Message['newAction']
+  group: Group
 ) => {
-  const isDraw = newAction.type === 'draw'
-
-  if (
-    (newAction.order == null || Array.isArray(newAction.order) === false) &&
-    !isDraw
-  ) {
-    console.info(action.id, 'ending without sharing sidepot is not allowed')
-    return
-  }
+  const isDraw = action.winners[0].length > 1
 
   let pot = clone(action.pot)
-  let order = isDraw
-    ? [action.sidePot.map(({ id }) => id)]
-    : clone(newAction.order) || [[]]
+  let order = clone(action.winners)
 
   const share: Share[] = []
   action.sidePot.forEach(sidepot => {
@@ -720,48 +711,36 @@ export const handleEndRoundWithSidePot = async (
   }
 }
 
-export const handleEndRound = async (
-  action: ActionRunning,
-  group: Group,
-  newAction: Message['newAction']
-) => {
+export const handleEndRound = async (action: ActionRunning, group: Group) => {
+  if (action.winners == null) {
+    console.error(action.id, 'missing winners for group')
+    return
+  }
+
   if (action.sidePot != null) {
-    return handleEndRoundWithSidePot(
-      action as ActionRunningWithSidePot,
-      group,
-      newAction
-    )
+    return handleEndRoundWithSidePot(action as ActionRunningWithSidePot, group)
   }
 
   let pot = 0
-  switch (newAction.type) {
-    case 'draw': {
-      const ids = Object.entries(action.turn)
-        .filter(([, value]) => value.status !== 'fold')
-        .map(([id]) => id)
-
+  const isDraw = action.winners[0].length > 1
+  switch (isDraw) {
+    case true: {
+      const ids = action.winners.flatMap(([id]) => id)
       const share = Math.floor(action.pot / ids.length)
-
       ids.forEach(id => {
         const user = group.users.find(user => user.id === id) || { sum: 0 }
         user.sum += share
       })
-
       pot = action.pot - share * ids.length
       break
     }
 
-    case 'winner': {
-      const user = group.users.find(user => user.id === action.big) || {
-        sum: 0,
-      }
+    case false: {
+      const winner = action.winners[0][0]
+      const user = group.users.find(user => user.id === winner) || { sum: 0 }
       user.sum += action.pot
       break
     }
-
-    default:
-      console.info(action.id, 'unhandled event', newAction)
-      return
   }
 
   if (await resetAction({ action, pot, group })) {
@@ -786,6 +765,7 @@ export const handleConfirmation = async (
     )
   )
   console.log('action.round === 4', newAction)
+  await handleEndRound(action, group)
 }
 
 mainLoop(CHANNEL, async maybeMessage => {
@@ -820,7 +800,7 @@ mainLoop(CHANNEL, async maybeMessage => {
     return
   }
 
-  // TODO: wait for confirmations
+  // TODO: wait for confirmations, then end game
   if (action.round === 4) {
     console.info(action.id, 'group is in showdown')
     await handleConfirmation(action, group, message.newAction)

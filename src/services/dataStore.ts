@@ -208,22 +208,21 @@ export const isStoreType = (any: any): any is StoreTypes => {
 }
 
 export const isNewActionType = (any: any): any is NewActionEnum => {
-  switch (any) {
+  switch (any as NewActionEnum) {
     case 'allIn':
     case 'back':
     case 'bank':
     case 'bet':
     case 'call':
     case 'check':
-    case 'draw':
     case 'fold':
     case 'join':
     case 'leave':
     case 'none':
     case 'raise':
     case 'sittingOut':
-    case 'winner':
     case 'confirm':
+    case 'forceConfirmAll':
       return true
     default:
       return false
@@ -258,14 +257,8 @@ export const isNewAction = (
     case 'none':
     case 'sittingOut':
     case 'confirm':
+    case 'forceConfirmAll':
       return isNumber(any.value) === false
-    case 'draw':
-    case 'winner':
-      return Array.isArray(any.order)
-        ? any.order.every(order =>
-            order.every(winner => checkId(winner, 'user'))
-          )
-        : true
     default:
       return isNumber(any.value)
   }
