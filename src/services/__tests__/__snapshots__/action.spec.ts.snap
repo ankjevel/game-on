@@ -750,6 +750,7 @@ Object {
   "id": "group:016650b1-8c11-41e3-b00f-a616469a3b1b",
   "name": "super-duper-normal",
   "owner": "user:0f3bd090-e991-425a-8978-71ad27164510",
+  "pub": true,
   "startSum": 140,
   "users": Array [
     Object {
