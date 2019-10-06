@@ -1,0 +1,44 @@
+jobs:
+  include:
+    - stage: test
+      language: node_js
+      node_js:
+        - "12.9"
+      cache:
+        directories:
+          - "~/node_modules"
+      script:
+        - npm run test
+
+    - stage: build_and_maybe_deploy
+      env:
+        - NAMESPACE="game-on"
+        - SERVICE="game-on-app"
+        - NAME="game-on-app"
+        - RELEASE_SCRIPT="https://gist.githubusercontent.com/ankjevel/fc444cdb248287a97242ced271ece388/raw"
+      language: node_js
+      node_js: "12.9"
+      cache:
+        directories:
+          - "~/node_modules"
+      script:
+        - npm run test
+      after_success:
+        - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+        - export REPO="${TRAVIS_REPO_SLUG,,}"
+        - export TAG=$([ ! -z "$TRAVIS_TAG" ] && echo "${TRAVIS_TAG/v/}" || echo "")
+        - docker build -t $REPO:latest .
+        - docker push $REPO:latest
+        - if [ ! -z "$TAG" ]; then
+            docker tag $REPO:latest $REPO:$TAG
+            docker push $REPO:$TAG
+            source <(curl "$RELEASE_SCRIPT" -s 2>&1)
+          fi
+
+stages:
+  - name: test
+  - name: build_and_maybe_deploy
+    if: branch = master AND type != pull_request
+
+notifications:
+  email: false
