@@ -28,9 +28,10 @@ const jwtMock = (req, _res, next) => {
 }
 
 jest.mock('express-jwt', () => () => jwtMock)
-jest.mock('ioredis')
 jest.mock('../services/dataStore')
-jest.mock('../routes/socket')
+jest.mock('../routes/socket', () => ({ listen: jest.fn() }))
+jest.mock('../adapters/redis', () => () => jest.fn())
+jest.mock('../services/messageListener', () => () => jest.fn())
 
 import app, { server } from '../index'
 

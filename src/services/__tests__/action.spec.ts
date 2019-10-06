@@ -14,6 +14,7 @@ import * as betFoldAllInFixture from '../__fixtures__/bet-fold-all-in.fixture'
 jest.mock('../dataStore')
 jest.mock('../session')
 jest.mock('../messageListener')
+jest.mock('../../adapters/redis', () => () => jest.fn())
 
 import * as actionService from '../action'
 import { clone } from '../../utils'

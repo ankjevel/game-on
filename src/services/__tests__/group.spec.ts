@@ -8,6 +8,8 @@ let ds: {
   [key: string]: jest.Mock
 }
 
+jest.mock('../../adapters/redis', () => () => jest.fn())
+
 beforeEach(() => {
   ds = dataStore as any
   console.log = jest.fn()
