@@ -27,7 +27,7 @@ jobs:
       script:
         - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
         - export REPO="${TRAVIS_REPO_SLUG,,}"
-        - export TAG=${TRAVIS_TAG/v/}"
+        - export TAG="${TRAVIS_TAG/v/}"
         - docker build -t $REPO:latest-tag-release .
         - docker tag $REPO:latest-tag-release $REPO:$TAG
         - docker push $REPO:latest-tag-release
