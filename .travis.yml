@@ -2,15 +2,28 @@ jobs:
   include:
     - stage: test
       language: node_js
-      node_js:
-        - "12.9"
+      node_js: "12.9"
       cache:
         directories:
           - "~/node_modules"
       script:
         - npm run test
 
-    - stage: build_and_maybe_deploy
+    - stage: build
+      language: node_js
+      node_js: "12.9"
+      cache:
+        directories:
+          - "~/node_modules"
+      script:
+        - npm run test
+      after_success:
+        - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+        - export REPO="${TRAVIS_REPO_SLUG,,}"
+        - docker build -t $REPO:latest .
+        - docker push $REPO:latest
+
+    - stage: build_and_deploy_tag
       env:
         - NAMESPACE="game-on"
         - SERVICE="game-on-app"
@@ -26,19 +39,19 @@ jobs:
       after_success:
         - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
         - export REPO="${TRAVIS_REPO_SLUG,,}"
-        - export TAG=$([ ! -z "$TRAVIS_TAG" ] && echo "${TRAVIS_TAG/v/}" || echo "")
-        - docker build -t $REPO:latest .
-        - docker push $REPO:latest
-        - if [ ! -z "$TAG" ]; then
-            docker tag $REPO:latest $REPO:$TAG
-            docker push $REPO:$TAG
-            source <(curl "$RELEASE_SCRIPT" -s 2>&1)
-          fi
+        - export TAG=${TRAVIS_TAG/v/}"
+        - docker build -t $REPO:latest-tag-release .
+        - docker tag $REPO:latest-tag-release $REPO:$TAG
+        - docker push $REPO:latest-tag-release
+        - docker push $REPO:$TAG
+        - source <(curl "$RELEASE_SCRIPT" -s 2>&1)
 
 stages:
   - name: test
-  - name: build_and_maybe_deploy
+  - name: build
     if: branch = master AND type != pull_request
+  - name: build_and_deploy_tag
+    if: tag != ""
 
 notifications:
   email: false
