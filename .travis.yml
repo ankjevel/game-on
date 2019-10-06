@@ -10,14 +10,7 @@ jobs:
         - npm run test
 
     - stage: build
-      language: node_js
-      node_js: "12.9"
-      cache:
-        directories:
-          - "~/node_modules"
       script:
-        - npm run test
-      after_success:
         - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
         - export REPO="${TRAVIS_REPO_SLUG,,}"
         - docker build -t $REPO:latest .
@@ -29,14 +22,7 @@ jobs:
         - SERVICE="game-on-app"
         - NAME="game-on-app"
         - RELEASE_SCRIPT="https://gist.githubusercontent.com/ankjevel/fc444cdb248287a97242ced271ece388/raw"
-      language: node_js
-      node_js: "12.9"
-      cache:
-        directories:
-          - "~/node_modules"
       script:
-        - npm run test
-      after_success:
         - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
         - export REPO="${TRAVIS_REPO_SLUG,,}"
         - export TAG=${TRAVIS_TAG/v/}"
