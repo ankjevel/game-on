@@ -49,7 +49,7 @@ jobs:
 stages:
   - name: test
   - name: build
-    if: branch = master AND type != pull_request
+    if: branch = master AND type != pull_request AND tag !~ /^v/
   - name: build_and_deploy_tag
     if: tag =~ /^v/
 
