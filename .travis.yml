@@ -51,7 +51,7 @@ stages:
   - name: build
     if: branch = master AND type != pull_request
   - name: build_and_deploy_tag
-    if: tag != ""
+    if: tag =~ /^v/
 
 notifications:
   email: false
