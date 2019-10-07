@@ -21,18 +21,18 @@ jobs:
       language: minimal
       env:
         - NAMESPACE="game-on"
-        - SERVICE="game-on-app"
-        - NAME="game-on-app"
-        - RELEASE_SCRIPT="https://gist.githubusercontent.com/ankjevel/fc444cdb248287a97242ced271ece388/raw"
+        - DEPLOYMENT="game-on-app"
+        - CONTAINER="game-on-app"
+        - DEPLOY_SCRIPT="https://gist.githubusercontent.com/ankjevel/fc444cdb248287a97242ced271ece388/raw/69f469562ebe46ef15e066fc574d5d865a5e83ee/deploy.sh"
       script:
-        - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
         - export REPO="${TRAVIS_REPO_SLUG,,}"
         - export TAG="${TRAVIS_TAG/v/}"
+        - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
         - docker build -t $REPO:latest-tag-release .
         - docker tag $REPO:latest-tag-release $REPO:$TAG
         - docker push $REPO:latest-tag-release
         - docker push $REPO:$TAG
-        - source <(curl "$RELEASE_SCRIPT" -s 2>&1)
+        - source <(curl "$DEPLOY_SCRIPT" -s 2>&1)
 
 stages:
   - name: test
