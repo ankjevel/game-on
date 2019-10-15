@@ -6,7 +6,7 @@ import { hasProp, clone } from '../utils'
 import config from '../config'
 import { cleanUserSummary } from '../services/dataStore'
 import { getGroupForUser } from '../services/group'
-import { subscribe } from '../services/pubsub'
+import { subscribe, publish } from '../services/pubsub'
 import parse from '../utils/parse'
 
 const connections: Map<SocketIO.Socket['id'], Group['id']> = new Map()
@@ -28,6 +28,35 @@ subscribe('update:group:*', event => {
     for (const socket of room) {
       console.log('update:group', socket.id)
       socket.emit('update:group', message)
+    }
+  } catch (error) {
+    console.error(error)
+  }
+})
+
+subscribe('message:group:*', event => {
+  const channel = event.channel.replace('message:', '')
+  const room = rooms.get(channel)
+  if (!room) {
+    return
+  }
+
+  try {
+    const data = parse<{
+      id: string
+      message: string
+      userID: string
+      date: string
+    }>(event.message)
+
+    if (!data || !data.id || !data.message || !data.userID || !data.date) {
+      return
+    }
+
+    const { userID, message, date } = data
+
+    for (const socket of room) {
+      socket.emit('message', { message, userID, date })
     }
   } catch (error) {
     console.error(error)
@@ -120,6 +149,42 @@ export const listen = (io: SocketIO.Server) => {
   io.on('connection', client => {
     const { id } = client
     console.log(id, 'user connected')
+
+    client.on('spectate', (id: string) => {
+      console.log({ id })
+
+      leave(client) // if spectating, remove all other listeners
+    })
+
+    client.on(
+      'message',
+      async (
+        body: MaybeUndefined<{
+          token: string
+          message: string
+        }>
+      ) => {
+        if (!body || !hasProp(body, 'message') || !hasProp(body, 'token')) {
+          return
+        }
+
+        const user = verify(body.token, config.jwt.secret) as JWTUSer
+        const group = await getGroupForUser(user.id)
+        if (!group) {
+          return
+        }
+
+        publish(
+          `message:${group.id}`,
+          JSON.stringify({
+            id,
+            message: body.message,
+            userID: user.id,
+            date: new Date().toISOString(),
+          })
+        )
+      }
+    )
 
     client.on('user:join', (token: string) => {
       console.log(id, 'user:join')
