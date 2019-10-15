@@ -7,23 +7,19 @@ import {
   cleanUserSummary,
 } from '../services/dataStore'
 import { getPublicGroups } from '../services/group'
-import { nullOrEmpty, hasProp } from '../utils'
+import { nullOrEmpty, hasProp, isNumber } from '../utils'
 
 const isActionRunning = (type: string, data: any): data is ActionRunning =>
   type === 'action' && data && hasProp(data, 'turn')
 
 export const register: Route = (app, auth) => {
-  app.get(
-    '/get/public-groups',
-    // auth,
-    async ({ query: { take = 10 } /*user*/ }, res) => {
-      // if (user == null) {
-      //   return res.sendStatus(401)
-      // }
-
-      res.send(await getPublicGroups({ take }))
+  app.get('/get/public-groups', async ({ query: { take = 10 } }, res) => {
+    if (nullOrEmpty(take) || isNumber(take) === false) {
+      return res.sendStatus(400)
     }
-  )
+
+    res.send(await getPublicGroups({ take: Math.max(Math.min(take, 25), 1) }))
+  })
 
   app.get(
     '/get/:id/:type',
