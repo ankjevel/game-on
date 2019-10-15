@@ -432,8 +432,6 @@ export const startGame = async ({
 
       res.action = action.id
 
-      console.log(action.id, 'new action', res.users.map(user => user.id))
-
       return res
     }
   )

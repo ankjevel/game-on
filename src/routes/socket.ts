@@ -21,12 +21,10 @@ subscribe('update:group:*', event => {
   try {
     const message = parse<Group>(event.message)
     const room = rooms.get(channel)
-    console.log(channel, 'hasRoom?', !!room)
     if (!room) {
       return
     }
     for (const socket of room) {
-      console.log('update:group', socket.id)
       socket.emit('update:group', message)
     }
   } catch (error) {
@@ -101,7 +99,6 @@ subscribe('update:action:*', event => {
 export const join = (client: SocketIO.Socket, newRoom: Group['id']) => {
   const room = rooms.get(newRoom)
   const user = users.get(client.id)
-  console.log(client.id, user)
 
   if (room) {
     for (const socket of room) {
