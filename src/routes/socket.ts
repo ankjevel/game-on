@@ -178,7 +178,7 @@ export const listen = (io: SocketIO.Server) => {
           `message:${group.id}`,
           JSON.stringify({
             id,
-            message: body.message,
+            message: body.message.substr(0, 255),
             userID: user.id,
             date: new Date().toISOString(),
           })
