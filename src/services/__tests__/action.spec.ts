@@ -10,6 +10,7 @@ import {
 import * as dataStore from '../dataStore'
 import * as drawFixture from '../__fixtures__/draw.fixture'
 import * as betFoldAllInFixture from '../__fixtures__/bet-fold-all-in.fixture'
+import * as fourAllInFixture from '../__fixtures__/four-all-in.fixture'
 
 jest.mock('../dataStore')
 jest.mock('../session')
@@ -30,7 +31,7 @@ let dataStoreMock: {
 
 beforeEach(() => {
   dataStoreMock = dataStore as any
-  console.log = jest.fn()
+  // console.log = jest.fn()
   console.info = jest.fn()
 })
 
@@ -162,6 +163,27 @@ describe('#handleEndRoundWithSidePot', () => {
     expect(resetAction.mock.calls[0][0]).toMatchSnapshot()
 
     expect(group.users.map(user => user.sum)).toEqual([140, 0, 280])
+  })
+
+  it('should be only ONE winner', async () => {
+    action = clone(fourAllInFixture.action)
+    users = clone(fourAllInFixture.users)
+    group = clone(fourAllInFixture.group)
+
+    const resetAction = jest.spyOn(actionService, 'resetAction')
+    resetAction.mockResolvedValue(true)
+
+    expect(group.users.map(user => user.sum)).toEqual([0, 0, 0, 0])
+
+    await actionService.handleEndRoundWithSidePot(
+      action as ActionRunningWithSidePot,
+      group
+    )
+
+    expect(group.users.map(user => user.sum)).toEqual([0, 0, 800, 0])
+
+    expect(resetAction).toBeCalledTimes(1)
+    expect(resetAction.mock.calls[0][0]).toMatchSnapshot()
   })
 })
 

@@ -325,6 +325,416 @@ Object {
 }
 `;
 
+exports[`#handleEndRoundWithSidePot should be only ONE winner 1`] = `
+Object {
+  "action": Object {
+    "big": "user:04c4a68e-a638-427e-be30-1763ca219270",
+    "button": "user:04c4a68e-a638-427e-be30-1763ca219270",
+    "communityCards": Array [
+      "d2",
+      "b2",
+      "b7",
+      "d5",
+      "be",
+    ],
+    "deck": Array [
+      "d1",
+      null,
+      null,
+      "d4",
+      null,
+      "d6",
+      "d7",
+      "d8",
+      null,
+      "da",
+      "db",
+      null,
+      "de",
+      null,
+      null,
+      "c3",
+      "c4",
+      "c5",
+      "c6",
+      null,
+      "c8",
+      null,
+      "ca",
+      null,
+      "cd",
+      "ce",
+      "b1",
+      null,
+      "b3",
+      "b4",
+      "b5",
+      "b6",
+      null,
+      "b8",
+      "b9",
+      "ba",
+      "bb",
+      "bd",
+      null,
+      "a1",
+      "a2",
+      "a3",
+      "a4",
+      "a5",
+      "a6",
+      null,
+      null,
+      "a9",
+      null,
+      "ab",
+      "ad",
+      "ae",
+    ],
+    "groupID": "group:a4472ffa-0646-40bb-b893-b72ab919f6d6",
+    "id": "action:86685fe1-9460-43ec-9fa5-9f32f7961396",
+    "pot": 0,
+    "queued": Object {},
+    "round": 4,
+    "sidePot": Array [
+      Object {
+        "id": "user:04c4a68e-a638-427e-be30-1763ca219270",
+        "sum": 200,
+      },
+      Object {
+        "id": "user:f2028356-1fd8-4bf1-b55b-611993223966",
+        "sum": 200,
+      },
+      Object {
+        "id": "user:b5aa24e7-4d02-4420-9dd6-752dd508a306",
+        "sum": 200,
+      },
+      Object {
+        "id": "user:de4d9b93-d1eb-43b6-9d94-f0deaf5445f3",
+        "sum": 200,
+      },
+    ],
+    "small": "user:04c4a68e-a638-427e-be30-1763ca219270",
+    "turn": Object {
+      "user:04c4a68e-a638-427e-be30-1763ca219270": Object {
+        "bet": 200,
+        "cards": Array [
+          "c7",
+          "a8",
+        ],
+        "hand": 7,
+        "handParsed": Object {
+          "highCards": Array [
+            14,
+            8,
+            7,
+            5,
+            2,
+          ],
+          "onHand": Array [
+            7,
+            8,
+          ],
+          "parsed": Object {
+            "cards": Object {
+              "clubs": Array [
+                2,
+                5,
+              ],
+              "diamonds": Array [
+                7,
+              ],
+              "hearts": Array [
+                2,
+                7,
+                14,
+              ],
+              "spades": Array [
+                8,
+              ],
+            },
+            "flush": Object {
+              "clubs": false,
+              "diamonds": false,
+              "hearts": false,
+              "spades": false,
+            },
+            "fourOfAKinds": Array [],
+            "pairs": Array [
+              "2",
+              "7",
+            ],
+            "same": Object {
+              "1": 0,
+              "10": 0,
+              "11": 0,
+              "13": 0,
+              "14": 1,
+              "2": 2,
+              "3": 0,
+              "4": 0,
+              "5": 1,
+              "6": 0,
+              "7": 2,
+              "8": 1,
+              "9": 0,
+            },
+            "straightFlushes": Array [],
+            "threeOfAKinds": Array [],
+          },
+        },
+        "status": "allIn",
+      },
+      "user:b5aa24e7-4d02-4420-9dd6-752dd508a306": Object {
+        "bet": 200,
+        "cards": Array [
+          "aa",
+          "a7",
+        ],
+        "hand": 7,
+        "handParsed": Object {
+          "highCards": Array [
+            14,
+            10,
+            7,
+            5,
+            2,
+          ],
+          "onHand": Array [
+            7,
+            8,
+          ],
+          "parsed": Object {
+            "cards": Object {
+              "clubs": Array [
+                2,
+                5,
+              ],
+              "diamonds": Array [],
+              "hearts": Array [
+                2,
+                7,
+                14,
+              ],
+              "spades": Array [
+                7,
+                10,
+              ],
+            },
+            "flush": Object {
+              "clubs": false,
+              "diamonds": false,
+              "hearts": false,
+              "spades": false,
+            },
+            "fourOfAKinds": Array [],
+            "pairs": Array [
+              "2",
+              "7",
+            ],
+            "same": Object {
+              "1": 0,
+              "10": 1,
+              "11": 0,
+              "13": 0,
+              "14": 1,
+              "2": 2,
+              "3": 0,
+              "4": 0,
+              "5": 1,
+              "6": 0,
+              "7": 2,
+              "8": 0,
+              "9": 0,
+            },
+            "straightFlushes": Array [],
+            "threeOfAKinds": Array [],
+          },
+        },
+        "status": "allIn",
+      },
+      "user:de4d9b93-d1eb-43b6-9d94-f0deaf5445f3": Object {
+        "bet": 200,
+        "cards": Array [
+          "c1",
+          "dd",
+        ],
+        "hand": 8,
+        "handParsed": Object {
+          "highCards": Array [
+            1,
+            14,
+            13,
+            7,
+            5,
+            2,
+          ],
+          "onHand": Array [
+            8,
+          ],
+          "parsed": Object {
+            "cards": Object {
+              "clubs": Array [
+                2,
+                5,
+                13,
+              ],
+              "diamonds": Array [
+                1,
+              ],
+              "hearts": Array [
+                2,
+                7,
+                14,
+              ],
+              "spades": Array [],
+            },
+            "flush": Object {
+              "clubs": false,
+              "diamonds": false,
+              "hearts": false,
+              "spades": false,
+            },
+            "fourOfAKinds": Array [],
+            "pairs": Array [
+              "2",
+            ],
+            "same": Object {
+              "1": 1,
+              "10": 0,
+              "11": 0,
+              "13": 1,
+              "14": 1,
+              "2": 2,
+              "3": 0,
+              "4": 0,
+              "5": 1,
+              "6": 0,
+              "7": 1,
+              "8": 0,
+              "9": 0,
+            },
+            "straightFlushes": Array [],
+            "threeOfAKinds": Array [],
+          },
+        },
+        "status": "allIn",
+      },
+      "user:f2028356-1fd8-4bf1-b55b-611993223966": Object {
+        "bet": 200,
+        "cards": Array [
+          "d9",
+          "c9",
+        ],
+        "hand": 7,
+        "handParsed": Object {
+          "highCards": Array [
+            14,
+            9,
+            7,
+            5,
+            2,
+          ],
+          "onHand": Array [
+            7,
+            8,
+          ],
+          "parsed": Object {
+            "cards": Object {
+              "clubs": Array [
+                2,
+                5,
+                9,
+              ],
+              "diamonds": Array [
+                9,
+              ],
+              "hearts": Array [
+                2,
+                7,
+                14,
+              ],
+              "spades": Array [],
+            },
+            "flush": Object {
+              "clubs": false,
+              "diamonds": false,
+              "hearts": false,
+              "spades": false,
+            },
+            "fourOfAKinds": Array [],
+            "pairs": Array [
+              "2",
+              "9",
+            ],
+            "same": Object {
+              "1": 0,
+              "10": 0,
+              "11": 0,
+              "13": 0,
+              "14": 1,
+              "2": 2,
+              "3": 0,
+              "4": 0,
+              "5": 1,
+              "6": 0,
+              "7": 1,
+              "8": 0,
+              "9": 2,
+            },
+            "straightFlushes": Array [],
+            "threeOfAKinds": Array [],
+          },
+        },
+        "status": "allIn",
+      },
+    },
+    "winners": Array [
+      Array [
+        "user:f2028356-1fd8-4bf1-b55b-611993223966",
+      ],
+      Array [
+        "user:b5aa24e7-4d02-4420-9dd6-752dd508a306",
+      ],
+      Array [
+        "user:04c4a68e-a638-427e-be30-1763ca219270",
+      ],
+    ],
+  },
+  "group": Object {
+    "action": "action:86685fe1-9460-43ec-9fa5-9f32f7961396",
+    "blind": Object {
+      "big": 4,
+      "small": 2,
+    },
+    "id": "group:a4472ffa-0646-40bb-b893-b72ab919f6d6",
+    "name": "awesome",
+    "owner": "user:de4d9b93-d1eb-43b6-9d94-f0deaf5445f3",
+    "pub": true,
+    "startSum": 200,
+    "users": Array [
+      Object {
+        "id": "user:de4d9b93-d1eb-43b6-9d94-f0deaf5445f3",
+        "sum": 0,
+      },
+      Object {
+        "id": "user:04c4a68e-a638-427e-be30-1763ca219270",
+        "sum": 0,
+      },
+      Object {
+        "id": "user:f2028356-1fd8-4bf1-b55b-611993223966",
+        "sum": 800,
+      },
+      Object {
+        "id": "user:b5aa24e7-4d02-4420-9dd6-752dd508a306",
+        "sum": 0,
+      },
+    ],
+  },
+  "pot": 0,
+}
+`;
+
 exports[`#handleEndRoundWithSidePot will not be a draw, if api decides (pair in 7 is not as high as kings) 1`] = `
 Object {
   "action": Object {

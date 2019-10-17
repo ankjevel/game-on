@@ -657,6 +657,7 @@ export const handleEndRoundWithSidePot = async (
   group: Group
 ) => {
   const isDraw = action.winners[0].length > 1
+  const bigSum = action.turn[action.big].bet
 
   let pot = clone(action.pot)
   let order = clone(action.winners)
@@ -669,7 +670,8 @@ export const handleEndRoundWithSidePot = async (
       return
     }
 
-    let mWinners = winners(order)
+    const isBig = action.turn[first[0]].bet === bigSum
+    let mWinners = isBig ? action.sidePot.length : winners(order)
     first.forEach((id, index) => {
       if (id !== sidepot.id) {
         return
@@ -785,7 +787,7 @@ export const handleConfirmation = async (
     return await dataStore.update(action.id, action, 'action:running')
   }
 
-  await handleEndRound(action, group)
+  return await handleEndRound(action, group)
 }
 
 mainLoop(CHANNEL, async maybeMessage => {
