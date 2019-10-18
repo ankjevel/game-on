@@ -456,34 +456,34 @@ export const handleUpdate = async (
 
   handCards: if (round !== action.round) {
     const allFolded =
-      Object.keys(action.turn).filter(key => action.turn[key].status !== 'fold')
+      Object.values(action.turn).filter(({ status }) => status !== 'fold')
         .length <= 1
+
     if (allFolded) {
-      Object.keys(action.turn).forEach(key => {
-        const user = action.turn[key]
-        if (user.status === 'fold') {
-          user.hand = undefined
-          user.handParsed = undefined
+      Object.values(action.turn).forEach(summary => {
+        if (summary.status === 'fold') {
+          summary.hand = undefined
+          summary.handParsed = undefined
         }
       })
       break handCards
     }
-    maybeDealCards(action, group, round)
-    Object.keys(action.turn).forEach(key => {
-      const user = action.turn[key]
 
-      if (user.status === 'fold') {
-        user.hand = undefined
-        user.handParsed = undefined
+    maybeDealCards(action, group, round)
+
+    Object.values(action.turn).forEach(summary => {
+      if (summary.status === 'fold') {
+        summary.hand = undefined
+        summary.handParsed = undefined
         return
       }
 
       const { onHand, parsed, highCards } = checkHand(
         action.communityCards,
-        user.cards || []
+        summary.cards || []
       )
-      user.hand = onHand.slice(0, 1)[0]
-      user.handParsed = {
+      summary.hand = onHand.slice(0, 1)[0]
+      summary.handParsed = {
         parsed,
         highCards,
         onHand,
