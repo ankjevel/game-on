@@ -455,11 +455,10 @@ export const handleUpdate = async (
   }
 
   handCards: if (round !== action.round) {
-    if (
-      Object.keys(action.round).filter(
-        key => action.turn[key].status !== 'fold'
-      ).length <= 1
-    ) {
+    const allFolded =
+      Object.keys(action.turn).filter(key => action.turn[key].status !== 'fold')
+        .length <= 1
+    if (allFolded) {
       Object.keys(action.turn).forEach(key => {
         const user = action.turn[key]
         if (user.status === 'fold') {
