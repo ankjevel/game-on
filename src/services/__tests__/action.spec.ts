@@ -135,6 +135,11 @@ describe('#handleEndRoundWithSidePot', () => {
 
     const resetAction = jest.spyOn(actionService, 'resetAction')
 
+    expect(action.pot).toEqual(280)
+    expect(
+      Object.values(action.turn).reduce((sum, turn) => sum + turn.bet, 0)
+    ).toEqual(280)
+
     expect(group.users.map(user => user.sum)).toEqual([140, 0, 0])
 
     resetAction.mockResolvedValue(true)
@@ -143,10 +148,12 @@ describe('#handleEndRoundWithSidePot', () => {
       action as ActionRunningWithSidePot,
       group
     )
-    expect(resetAction).toBeCalledTimes(1)
-    expect(resetAction.mock.calls[0][0]).toMatchSnapshot()
 
     expect(group.users.map(user => user.sum)).toEqual([140, 140, 140])
+    expect(action.pot).toEqual(0)
+
+    expect(resetAction).toBeCalledTimes(1)
+    expect(resetAction.mock.calls[0][0]).toMatchSnapshot()
   })
 
   it('will not be a draw, if api decides (pair in 7 is not as high as kings)', async () => {
@@ -165,7 +172,7 @@ describe('#handleEndRoundWithSidePot', () => {
     expect(group.users.map(user => user.sum)).toEqual([140, 0, 280])
   })
 
-  it('should be only ONE winner', async () => {
+  it('should split pots based on what players have in bank', async () => {
     action = clone(fourAllInFixture.action)
     users = clone(fourAllInFixture.users)
     group = clone(fourAllInFixture.group)
@@ -180,8 +187,33 @@ describe('#handleEndRoundWithSidePot', () => {
       group
     )
 
-    expect(group.users.map(user => user.sum)).toEqual([0, 0, 800, 0])
-
+    /**
+     * 187 * (4 eligible)
+     *  = 748
+     *    = one-winner: 748
+     * (190 - 187) * (3 eligible)
+     *  = 9
+     *    = two-winners: 4.5
+     *    = rounded: 4
+     * (193 - 190) * (2 eligible)
+     *  = 6
+     *    = one winner: 6
+     * (230 - 193) * (1 eligible)
+     *  = 37
+     *    = one winner: 37
+     *
+     * 04c4a68e = 748
+     * f2028356 -> 4 (4.5) = 4
+     * de4d9b93 -> 4 (4.5) + 6 = 10
+     * b5aa24e7 = 37
+     *
+     * 748 + 4 + 10 + 37 = 799
+     */
+    expect(group.users.reduce((sum, user) => sum + user.sum, 0)).toEqual(799)
+    expect(action.pot).toEqual(1)
+    expect(group.users.map(user => user.sum)).toEqual(
+      expect.arrayContaining([748, 4, 10, 37])
+    )
     expect(resetAction).toBeCalledTimes(1)
     expect(resetAction.mock.calls[0][0]).toMatchSnapshot()
   })

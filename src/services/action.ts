@@ -649,60 +649,42 @@ export const resetAction = async ({
   return true
 }
 
-const winners = (winners: ActionRunningWithSidePot['winners']) =>
-  winners.reduce((sum, winners) => sum + winners.length, 0)
-
 export const handleEndRoundWithSidePot = async (
   action: ActionRunningWithSidePot,
   group: Group
 ) => {
-  const isDraw = action.winners[0].length > 1
-  const bigSum = action.turn[action.big].bet
+  const share: Share[] = []
+  const sidePots = action.sidePot.sort((a, b) =>
+    a.sum > b.sum ? 1 : a.sum < b.sum ? -1 : 0
+  )
 
   let pot = clone(action.pot)
-  let order = clone(action.winners)
-
-  const share: Share[] = []
-  action.sidePot.forEach(sidepot => {
-    const first = order[0] || []
-
-    if (first.find(id => id === sidepot.id) == null) {
-      return
-    }
-
-    const isBig = action.turn[first[0]].bet === bigSum
-    let mWinners = isBig ? action.sidePot.length : winners(order)
-    first.forEach((id, index) => {
-      if (id !== sidepot.id) {
-        return
-      }
-
-      const sum = isDraw
-        ? sidepot.sum
-        : Math.floor(
-            (sidepot.sum - (action.pot - pot)) * (mWinners / first.length)
-          )
-
-      share.push({ id: sidepot.id, sum })
-      pot -= sum
-      action.pot -= sum
-
-      --mWinners
-      first.splice(index, 1)
-    })
-  })
-
-  order = order.filter(order => order.length)
-  if (order.length) {
-    const shared = winners(order)
-    const sum = Math.floor(pot / shared)
-    order.forEach(order =>
-      order.forEach(id => {
-        share.push({ id, sum })
-      })
+  let prev = 0
+  sidePots.forEach(sidePot => {
+    if (pot <= 0) return
+    const usersHaveSum = Object.entries(action.turn).filter(
+      ([, summary]) => summary.bet >= sidePot.sum
     )
-    pot -= sum * shared
-  }
+    const currentShare = Math.min(
+      (sidePot.sum - prev) * usersHaveSum.length,
+      pot
+    )
+    const winners =
+      action.winners
+        .map(winners =>
+          winners.filter(
+            winner => usersHaveSum.findIndex(([id]) => id === winner) !== -1
+          )
+        )
+        .filter(winners => winners.length)
+        .shift() || []
+    const winnings = currentShare / winners.length
+    winners.forEach(id => {
+      share.push({ id, sum: winnings })
+    })
+    pot = Math.max(pot - currentShare, 0)
+    prev = sidePot.sum
+  })
 
   share.forEach(({ id, sum }) => {
     const user = group.users.find(user => user.id === id)
@@ -713,6 +695,19 @@ export const handleEndRoundWithSidePot = async (
 
     user.sum += sum
   })
+
+  group.users.forEach(user => {
+    const floor = Math.floor(user.sum)
+    const rest = user.sum - floor
+    if (rest === 0) {
+      return
+    }
+    user.sum = floor
+    pot += rest
+  })
+
+  pot = Math.floor(pot)
+  action.pot = pot
 
   if (await resetAction({ action, pot, group })) {
     await dataStore.update(group.id, group, 'group')
