@@ -454,7 +454,21 @@ export const handleUpdate = async (
     debug.endAction({ action, group })
   }
 
-  if (round !== action.round) {
+  handCards: if (round !== action.round) {
+    if (
+      Object.keys(action.round).filter(
+        key => action.turn[key].status !== 'fold'
+      ).length <= 1
+    ) {
+      Object.keys(action.turn).forEach(key => {
+        const user = action.turn[key]
+        if (user.status === 'fold') {
+          user.hand = undefined
+          user.handParsed = undefined
+        }
+      })
+      break handCards
+    }
     maybeDealCards(action, group, round)
     Object.keys(action.turn).forEach(key => {
       const user = action.turn[key]
@@ -537,6 +551,10 @@ const maybeDealCards = (action: ActionRunning, group: Group, from: number) => {
     0,
     ...usersOrderedByButton.splice(buttonIndex, size - buttonIndex).slice(0)
   )
+
+  if (usersOrderedByButton.length <= 1) {
+    return
+  }
 
   for (const round of [...Array(action.round - from)]
     .map((_, ii) => action.round - (ii + 1) + 1)
