@@ -115,31 +115,27 @@ export const join = (client: SocketIO.Socket, newRoom: Group['id']) => {
 }
 
 export const leave = (client: SocketIO.Socket) => {
-  const connection = connections.get(client.id)
-  if (!connection) {
-    return
-  }
-
-  const room = rooms.get(connection)
-  if (!room) {
-    return
-  }
-
-  for (const socket of room) {
-    const user = users.get(client.id)
-    if (user == null) {
-      continue
-    }
-    socket.emit('user:left', user)
-  }
-
-  room.delete(client)
-
-  if (room.size === 0) {
-    rooms.delete(connection)
-  }
+  const groupID = connections.get(client.id)
+  if (!groupID) return
 
   connections.delete(client.id)
+
+  const room = rooms.get(groupID)
+  if (!room) return
+
+  rooms.delete(client.id)
+
+  const user = users.get(client.id)
+
+  if (room.size <= 1) {
+    rooms.delete(groupID)
+  } else {
+    for (const socket of room) {
+      socket.emit('user:left', user)
+    }
+  }
+
+  users.delete(client.id)
 }
 
 export const listen = (io: SocketIO.Server) => {
@@ -192,11 +188,6 @@ export const listen = (io: SocketIO.Server) => {
       })
     })
 
-    client.on('user:leave', () => {
-      console.log(id, 'user:leave')
-      leave(client)
-    })
-
     client.on(
       'group:join',
       async (
@@ -224,6 +215,11 @@ export const listen = (io: SocketIO.Server) => {
         join(client, body.id)
       }
     )
+
+    client.on('user:leave', () => {
+      console.log(id, 'user:leave')
+      leave(client)
+    })
 
     client.on('group:leave', () => {
       console.log(id, 'group:leave')

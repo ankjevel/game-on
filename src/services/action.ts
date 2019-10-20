@@ -598,28 +598,24 @@ export const resetAction = async ({
       action.id,
       `cant find next big|small [${indexOfBig},${indexOfSmall}]`
     )
+
     return false
   }
 
-  if (indexOfBig === indexOfSmall) {
-    if (
-      group.users.filter(
-        (user, i) => i !== indexOfBig && user.sum > group.blind.big
-      ).length < 1
-    ) {
-      const winner = [group.users[indexOfBig]]
-      group.users = winner
-      group.action = undefined
+  if (
+    group.users.filter(
+      (user, i) => i !== indexOfBig && user.sum > group.blind.big
+    ).length < 1
+  ) {
+    const winner = [group.users[indexOfBig]]
+    group.action = undefined
 
-      await dataStore.update(group.id, group, 'group')
-      await dataStore.del({
-        type: 'action:running',
-        id: action.id,
-      })
+    await dataStore.update(group.id, group, 'group')
+    await dataStore.del({ type: 'action:running', id: action.id })
 
-      console.log(action.id, 'game ended, winner declared', winner)
-      return false
-    }
+    console.log(action.id, 'game ended, winner declared', winner)
+
+    return false
   }
 
   const newSmall = group.users[indexOfSmall]
