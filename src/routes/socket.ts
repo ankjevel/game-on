@@ -96,7 +96,10 @@ subscribe('update:action:*', event => {
   }
 })
 
-export const join = (client: SocketIO.Socket, newRoom: Group['id']) => {
+export const join: (client: SocketIO.Socket, newRoom: Group['id']) => void = (
+  client,
+  newRoom
+) => {
   const room = rooms.get(newRoom)
   const user = users.get(client.id)
 
@@ -114,19 +117,22 @@ export const join = (client: SocketIO.Socket, newRoom: Group['id']) => {
   connections.set(client.id, newRoom)
 }
 
-export const leave = (client: SocketIO.Socket) => {
+export const leave: (
+  client: SocketIO.Socket,
+  type: 'group' | 'user'
+) => void = (client, type) => {
   const groupID = connections.get(client.id)
   if (!groupID) return
 
-  connections.delete(client.id)
+  if (type === 'user') {
+    connections.delete(client.id)
+  }
 
   const room = rooms.get(groupID)
   if (!room) return
-
   rooms.delete(client.id)
 
   const user = users.get(client.id)
-
   if (room.size <= 1) {
     rooms.delete(groupID)
   } else {
@@ -135,7 +141,9 @@ export const leave = (client: SocketIO.Socket) => {
     }
   }
 
-  users.delete(client.id)
+  if (type === 'user') {
+    users.delete(client.id)
+  }
 }
 
 export const listen = (io: SocketIO.Server) => {
@@ -146,7 +154,7 @@ export const listen = (io: SocketIO.Server) => {
     client.on('spectate', (id: string) => {
       console.log({ id })
 
-      leave(client) // if spectating, remove all other listeners
+      leave(client, 'user') // if spectating, remove all other listeners
     })
 
     client.on(
@@ -218,17 +226,34 @@ export const listen = (io: SocketIO.Server) => {
 
     client.on('user:leave', () => {
       console.log(id, 'user:leave')
-      leave(client)
+      leave(client, 'user')
     })
 
     client.on('group:leave', () => {
       console.log(id, 'group:leave')
-      leave(client)
+      leave(client, 'group')
+    })
+
+    client.on('restore', async token => {
+      console.log(id, 'restore')
+
+      const user = verify(token, config.jwt.secret) as JWTUSer
+      users.set(id, {
+        id: user.id,
+        name: user.name,
+      })
+
+      const group = await getGroupForUser(user.id)
+      if (!group) {
+        return
+      }
+
+      join(client, group.id)
     })
 
     client.on('disconnect', () => {
       console.log(id, 'user disconnected')
-      leave(client)
+      leave(client, 'user')
     })
   })
 
