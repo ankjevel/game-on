@@ -47,7 +47,7 @@ export const register: Route = (app, auth) => {
         return res.sendStatus(404)
       }
 
-      if (isActionRunning(maybeType, data) && data.round !== 4) {
+      if (isActionRunning(maybeType, data) && data.round !== 5) {
         cleanUserSummary(data.turn, user)
       }
 

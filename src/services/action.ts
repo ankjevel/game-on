@@ -69,7 +69,7 @@ export const newAction = async ({
     group == null ||
     group.users.some(user => user.id === userID) === false ||
     group.action !== action.id ||
-    (action.round === 4 && newAction.type !== 'confirm')
+    (action.round === 5 && newAction.type !== 'confirm')
   ) {
     return
   }
@@ -450,7 +450,7 @@ export const handleUpdate = async (
       }
     }
 
-    action.round = 4
+    action.round = 5
     debug.endAction({ action, group })
   }
 
@@ -491,7 +491,7 @@ export const handleUpdate = async (
     })
   }
 
-  if (action.round === 4) {
+  if (action.round === 5) {
     action.winners = sortHands(action.turn)
   }
 
@@ -555,8 +555,10 @@ const maybeDealCards = (action: ActionRunning, group: Group, from: number) => {
     return
   }
 
-  for (const round of [...Array(action.round - from)]
-    .map((_, ii) => action.round - (ii + 1) + 1)
+  const maxRound = Math.min(action.round, 4)
+
+  for (const round of [...Array(maxRound - from)]
+    .map((_, ii) => maxRound - (ii + 1) + 1)
     .reverse()) {
     dealCards(usersOrderedByButton, action, round)
   }
@@ -831,7 +833,7 @@ mainLoop(CHANNEL, async maybeMessage => {
   }
 
   // TODO: wait for confirmations, then end game
-  if (action.round === 4) {
+  if (action.round === 5) {
     console.info(action.id, 'group is in showdown')
     return await handleConfirmation(action, group, message)
   }
