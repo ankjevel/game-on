@@ -13,10 +13,18 @@ export type ActionGroup = {
 }
 
 export type QueryNext = {
+  /**
+   * index of current button
+   */
   start: number
+  /**
+   * userID of current button
+   */
   userID: User['id']
-  group: Group
-  action: ActionRunning
+  group: Pick<Group, 'users' | 'id'>
+  action: Pick<ActionRunning, 'turn'> & {
+    id?: ActionRunning['id']
+  }
   nextIndex: (current: number) => number
   check?: (value: NewActionEnum) => Boolean
 }

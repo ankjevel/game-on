@@ -1,3 +1,8 @@
+type PublicGroup = Group & {
+  users: number
+  owner: undefined
+}
+
 import {
   ActionRunning,
   Group,
@@ -9,8 +14,9 @@ import {
 import * as dataStore from './dataStore'
 import { newDeck } from './cards'
 import { clone } from '../utils'
+import { dealCardsToUsers, getPlayer } from './action'
 
-const getWrapper = async (id: Group['id']) => {
+export const getWrapper = async (id: Group['id']) => {
   return await dataStore.get<Group>({
     id,
     type: 'group',
@@ -18,7 +24,7 @@ const getWrapper = async (id: Group['id']) => {
   })
 }
 
-const checkIfAlreadyInAGroup = async (id: UserWithOutPassword['id']) => {
+export const checkIfAlreadyInAGroup = async (id: UserWithOutPassword['id']) => {
   for (const key of await dataStore.all('group')) {
     const res = await getWrapper(key)
 
@@ -40,11 +46,6 @@ export const getGroupForUser = async (id: UserWithOutPassword['id']) => {
   }
 
   return null
-}
-
-type PublicGroup = Group & {
-  users: number
-  owner: undefined
 }
 
 export const getPublicGroups = async ({ take }: { take: number }) => {
@@ -111,7 +112,7 @@ export const newGroup = async ({
   return group
 }
 
-const updateWrapper = async (
+export const updateWrapper = async (
   id: User['id'],
   breakIfTruthy: (result: Group) => boolean,
   modify: (result: Group) => Promise<Group>
@@ -385,22 +386,24 @@ export const startGame = async ({
 }): Promise<MaybeNull<Group>> => {
   return await updateWrapper(
     id,
-    res => res.owner !== userID || res.users.length < 2,
-    async res => {
+    group => group.owner !== userID || group.users.length < 2,
+    async group => {
       const deck = newDeck()
-      const [first, smallBlind] = res.users
-      const [, , bigBlind = first] = res.users
+      const [first, smallBlind] = group.users
+      const [, , bigBlind = first] = group.users
 
-      res.users.forEach(user => {
-        user.sum = res.startSum
+      const indexOfBig = group.users.findIndex(user => user.id === bigBlind.id)
+
+      group.users.forEach(user => {
+        user.sum = group.startSum
       })
 
       const turn: ActionRunning['turn'] = {
-        [smallBlind.id]: { bet: res.blind.small, status: 'none' },
-        [bigBlind.id]: { bet: res.blind.big, status: 'none' },
+        [smallBlind.id]: { bet: group.blind.small, status: 'none' },
+        [bigBlind.id]: { bet: group.blind.big, status: 'none' },
       }
 
-      res.users
+      group.users
         .filter(({ id }) => id !== bigBlind.id && id !== smallBlind.id)
         .forEach(user => {
           turn[user.id] = {
@@ -409,20 +412,42 @@ export const startGame = async ({
           }
         })
 
-      smallBlind.sum -= res.blind.small
-      bigBlind.sum -= res.blind.big
+      smallBlind.sum -= group.blind.small
+      bigBlind.sum -= group.blind.big
+
+      const newButtonIndex = getPlayer({
+        start: indexOfBig,
+        userID: group.users[indexOfBig].id,
+        group,
+        action: { turn },
+        nextIndex: current => (current + 1) % group.users.length,
+      })
+
+      if (newButtonIndex == null) {
+        throw new Error('cant find new button')
+      }
+
+      dealCardsToUsers(
+        {
+          turn,
+          button: smallBlind.id,
+          round: 0,
+          deck,
+        },
+        group
+      )
 
       const action = await dataStore.create<ActionRunning>('action', id => ({
         id,
-        groupID: res.id,
+        groupID: group.id,
         queued: {},
-        button: smallBlind.id,
+        button: group.users[newButtonIndex].id,
         big: bigBlind.id,
         small: smallBlind.id,
         turn,
         deck,
         communityCards: [],
-        pot: res.blind.small + res.blind.big,
+        pot: group.blind.small + group.blind.big,
         round: 0,
       }))
 
@@ -430,9 +455,9 @@ export const startGame = async ({
         throw new Error('atomic update failed')
       }
 
-      res.action = action.id
+      group.action = action.id
 
-      return res
+      return group
     }
   )
 }

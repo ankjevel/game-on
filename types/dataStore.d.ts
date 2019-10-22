@@ -12,7 +12,7 @@ export interface ActionRunning extends Action {
    * 3: river
    * 4: showdown
    */
-  round: 0 | 1 | 2 | 3 | 4 | 5
+  round: 0 | 1 | 2 | 3 | 4
   groupID: Group['id']
   queued: KeyValue<NewAction>
   turn: KeyValue<UserSummary>

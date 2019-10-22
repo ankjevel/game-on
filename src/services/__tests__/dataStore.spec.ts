@@ -6,6 +6,8 @@ const client = {
 
 const uuid = 'cb2a9f62-79c3-443c-b755-f53b5327634b'
 
+jest.mock('../messageListener')
+
 import * as userService from '../user'
 
 jest.mock('../../adapters/redis', () => () => client)

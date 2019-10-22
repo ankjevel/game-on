@@ -27,7 +27,7 @@ Object {
 exports[`#startGame works 2`] = `
 Object {
   "big": "bar",
-  "button": "baz",
+  "button": "bar",
   "communityCards": Array [],
   "deck": Array [
     "d1",

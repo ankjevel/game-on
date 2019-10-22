@@ -1,14 +1,18 @@
 import * as dataStore from '../dataStore'
 
 jest.mock('../dataStore')
+jest.mock('../../adapters/redis', () => () => jest.fn())
+jest.mock('../messageListener')
+jest.mock('../action', () => ({
+  getPlayer: jest.fn().mockReturnValue(0),
+  dealCardsToUsers: jest.fn(),
+}))
 
 import * as group from '../group'
 
 let ds: {
   [key: string]: jest.Mock
 }
-
-jest.mock('../../adapters/redis', () => () => jest.fn())
 
 beforeEach(() => {
   ds = dataStore as any

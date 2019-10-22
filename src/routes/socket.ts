@@ -78,7 +78,7 @@ subscribe('update:action:*', event => {
 
     const turn = clone(message.turn)
     for (const socket of room) {
-      if (message.round !== 5) {
+      if (message.round !== 4) {
         message.turn = {}
 
         const user = users.get(socket.id)

@@ -6,8 +6,6 @@ import {
   ActionRunning,
   NewAction,
   UserSummary,
-  User,
-  Order,
 } from 'dataStore'
 
 import {
@@ -69,7 +67,7 @@ export const newAction = async ({
     group == null ||
     group.users.some(user => user.id === userID) === false ||
     group.action !== action.id ||
-    (action.round === 5 && newAction.type !== 'confirm')
+    (action.round === 4 && newAction.type !== 'confirm')
   ) {
     return
   }
@@ -97,7 +95,7 @@ export const getPlayer = ({
 
   do {
     if (++i >= max) {
-      console.info(action.id, 'cant find next player')
+      console.info(action.id || group.id, 'cant find next player')
       run = false
       nextUserIndex = null
       break
@@ -170,7 +168,6 @@ export const handleUpdate = async (
   const userIndex = group.users.findIndex(({ id }) => id === userID)
   const user = group.users[userIndex] as Group['users'][0]
   const player = action.turn[userID]
-  const currentStatus = clone(player.status)
   const playerAnte = player.bet
   const turns = Object.values(action.turn)
   const round = action.round
@@ -384,33 +381,7 @@ export const handleUpdate = async (
   console.info(action.id, `new button: ${action.button} => ${nextUserID}`)
   action.button = nextUserID
 
-  if (action.round === 0) {
-    if (
-      turns.every(turn => turn.status !== 'none') &&
-      turns
-        .filter(turn => turn.status !== 'allIn' && turn.status !== 'fold')
-        .every((turn, i, array) => {
-          const prev = array[i - 1]
-
-          if (prev) {
-            return prev.bet === turn.bet && prev.bet >= currentAnte
-          }
-
-          return turn.bet >= currentAnte && turn.bet >= player.bet
-        })
-    ) {
-      ++action.round
-      action.button = action.big
-
-      turns
-        .filter(turn => turn.status !== 'allIn' && turn.status !== 'fold')
-        .forEach(turn => {
-          turn.status = 'bet'
-        })
-
-      console.info(action.id, 'should end betting round')
-    }
-  } else if (
+  if (
     userAction.type !== 'raise' &&
     (userAction.type !== 'allIn' && action.big !== userID) &&
     nextUserID === currentBig
@@ -420,19 +391,6 @@ export const handleUpdate = async (
 
   if (action.queued[userID]) {
     delete action.queued[userID]
-  }
-
-  if (
-    // again, small becomes the big in first round
-    action.round === 0 &&
-    action.small === userID &&
-    currentStatus === 'none' &&
-    // edge case where small folds at beginning of game
-    player.status !== 'fold' &&
-    action.big !== userID
-  ) {
-    console.info(action.id, 'set BIG <- SMALL')
-    action.big = userID
   }
 
   maybeEnd: if (
@@ -450,7 +408,7 @@ export const handleUpdate = async (
       }
     }
 
-    action.round = 5
+    action.round = 4
     debug.endAction({ action, group })
   }
 
@@ -470,28 +428,10 @@ export const handleUpdate = async (
     }
 
     maybeDealCards(action, group, round)
-
-    Object.values(action.turn).forEach(summary => {
-      if (summary.status === 'fold') {
-        summary.hand = undefined
-        summary.handParsed = undefined
-        return
-      }
-
-      const { onHand, parsed, highCards } = checkHand(
-        action.communityCards,
-        summary.cards || []
-      )
-      summary.hand = onHand.slice(0, 1)[0]
-      summary.handParsed = {
-        parsed,
-        highCards,
-        onHand,
-      }
-    })
+    checkHands(action)
   }
 
-  if (action.round === 5) {
+  if (action.round === 4) {
     action.winners = sortHands(action.turn)
   }
 
@@ -501,70 +441,84 @@ export const handleUpdate = async (
   await dataStore.update(group.id, group, 'group')
 }
 
-const dealCards = (
-  order: User['id'][],
-  action: ActionRunning,
-  round: number
-) => {
-  switch (round) {
-    case 1: {
-      for (const id of order) {
-        const user = action.turn[id] as { cards: string[] }
-        user.cards = takeCards(action.deck, 1) as [string]
-      }
-
-      for (const id of order) {
-        const user = action.turn[id] as { cards: string[] }
-        user.cards.push(...(takeCards(action.deck, 1) as [string]))
-      }
-
-      break
+const checkHands = (action: Pick<ActionRunning, 'turn' | 'communityCards'>) => {
+  Object.values(action.turn).forEach(summary => {
+    if (summary.status === 'fold') {
+      summary.hand = undefined
+      summary.handParsed = undefined
+      return
     }
 
-    case 4:
+    const { onHand, parsed, highCards } = checkHand(
+      action.communityCards,
+      summary.cards || []
+    )
+    summary.hand = onHand.slice(0, 1)[0]
+    summary.handParsed = {
+      parsed,
+      highCards,
+      onHand,
+    }
+  })
+}
+
+const dealCards = (action: ActionRunning, round: number) => {
+  switch (round) {
+    case 1: {
+      action.communityCards.push(
+        ...(takeCards(action.deck, 4) as Tuple<string, 4>).slice(1, 4)
+      )
+      break
+    }
+    case 2:
     case 3: {
       action.communityCards.push(
         ...(takeCards(action.deck, 2) as [string, string]).slice(-1)
       )
       break
     }
-
-    case 2: {
-      action.communityCards.push(
-        ...(takeCards(action.deck, 4) as Tuple<string, 4>).slice(1, 4)
-      )
-      break
-    }
   }
 }
 
-const maybeDealCards = (action: ActionRunning, group: Group, from: number) => {
+export const orderUsers = (
+  action: Pick<ActionRunning, 'turn' | 'button'>,
+  group: Pick<Group, 'users'>
+) => {
   const size = group.users.length
   const buttonIndex = group.users.findIndex(user => user.id === action.button)
+
   const usersOrderedByButton = group.users
     .slice(0)
     .map(({ id }) => id)
     .filter(id => action.turn[id].status !== 'fold')
+
   usersOrderedByButton.splice(
     0,
     0,
     ...usersOrderedByButton.splice(buttonIndex, size - buttonIndex).slice(0)
   )
 
-  if (usersOrderedByButton.length <= 1) {
+  return usersOrderedByButton
+}
+
+const maybeDealCards = (action: ActionRunning, group: Group, from: number) => {
+  if (orderUsers(action, group).length <= 1) {
     return
   }
 
-  const maxRound = Math.min(action.round, 4)
-
-  for (const round of [...Array(maxRound - from)]
-    .map((_, ii) => maxRound - (ii + 1) + 1)
+  for (const round of [...Array(action.round - from)]
+    .map((_, ii) => action.round - (ii + 1) + 1)
     .reverse()) {
-    dealCards(usersOrderedByButton, action, round)
+    dealCards(action, round)
   }
 }
 
-const findNext = (group: Group, startIndex: number, sum: number, tries = 0) => {
+export const findNext = (
+  group: Pick<Group, 'users'>,
+  startIndex: number,
+  sum: number,
+  tries = 0
+) => {
   const max = group.users.length
 
   if (tries > max) {
@@ -579,6 +533,23 @@ const findNext = (group: Group, startIndex: number, sum: number, tries = 0) => {
   }
 
   return next
+}
+
+export const dealCardsToUsers = (
+  action: Pick<ActionRunning, 'turn' | 'button' | 'round' | 'deck'>,
+  group: Pick<Group, 'users'>
+) => {
+  const order = orderUsers(action, group)
+
+  for (const id of order) {
+    const user = action.turn[id] as { cards: string[] }
+    user.cards = takeCards(action.deck, 1) as [string]
+  }
+
+  for (const id of order) {
+    const user = action.turn[id] as { cards: string[] }
+    user.cards.push(...(takeCards(action.deck, 1) as [string]))
+  }
 }
 
 export const resetAction = async ({
@@ -640,8 +611,21 @@ export const resetAction = async ({
   group.users[indexOfSmall].sum -= group.blind.small
   group.users[indexOfBig].sum -= group.blind.big
 
+  const newButtonIndex = getPlayer({
+    start: indexOfBig,
+    userID: newBig.id,
+    group,
+    action,
+    nextIndex: current => (current + 1) % group.users.length,
+  })
+
+  if (newButtonIndex == null) {
+    console.log(action.id, 'cant find id of new BIG')
+    return false
+  }
+
   action.big = newBig.id
-  action.button = newSmall.id
+  action.button = group.users[newButtonIndex].id
   action.communityCards = []
   action.deck = newDeck()
   action.winners = undefined
@@ -656,6 +640,8 @@ export const resetAction = async ({
   if (group.users.some(user => user.id === group.owner) === false) {
     group.owner = group.users[0].id
   }
+
+  dealCardsToUsers(action, group)
 
   console.info('\n\n')
   console.info(action.id, 'new small:', newSmall, 'new big:', newBig)
@@ -832,8 +818,7 @@ mainLoop(CHANNEL, async maybeMessage => {
     return
   }
 
-  // TODO: wait for confirmations, then end game
-  if (action.round === 5) {
+  if (action.round === 4) {
     console.info(action.id, 'group is in showdown')
     return await handleConfirmation(action, group, message)
   }
