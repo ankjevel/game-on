@@ -449,6 +449,7 @@ export const startGame = async ({
         communityCards: [],
         pot: group.blind.small + group.blind.big,
         round: 0,
+        lastMove: undefined,
       }))
 
       if (action == null) {

@@ -171,6 +171,10 @@ export const handleUpdate = async (
   const playerAnte = player.bet
   const turns = Object.values(action.turn)
   const round = action.round
+  const playerMove: NewAction & { userID: string } = {
+    userID,
+    type: 'none',
+  }
 
   debug.action({ action, group, newAction, userID })
 
@@ -223,6 +227,9 @@ export const handleUpdate = async (
       }
 
       player.status = 'bet'
+
+      playerMove.type = player.status
+
       break
     }
 
@@ -240,6 +247,9 @@ export const handleUpdate = async (
       }
 
       player.status = applyAction('call', action)
+
+      playerMove.type = player.status
+
       break
     }
 
@@ -264,6 +274,8 @@ export const handleUpdate = async (
 
       action.big = userID
       player.status = applyAction('raise', action)
+      playerMove.type = player.status
+      playerMove.value = player.bet - currentAnte
       break
     }
 
@@ -305,6 +317,7 @@ export const handleUpdate = async (
       player.cards = undefined
       player.hand = undefined
       player.handParsed = undefined
+      playerMove.type = player.status
       break
     }
 
@@ -340,6 +353,7 @@ export const handleUpdate = async (
       }
 
       player.status = applyAction('check', action)
+      playerMove.type = player.status
       break
     }
 
@@ -363,6 +377,9 @@ export const handleUpdate = async (
       if (player.bet > currentAnte) {
         action.big = userID
       }
+
+      playerMove.type = player.status
+      playerMove.value = player.bet - currentAnte
 
       break
     }
@@ -430,6 +447,8 @@ export const handleUpdate = async (
     maybeDealCards(action, group, round)
     checkHands(action)
   }
+
+  action.lastMove = playerMove
 
   if (action.round === 4) {
     action.winners = sortHands(action.turn)
@@ -633,6 +652,7 @@ export const resetAction = async ({
   action.queued = {}
   action.round = 0
   action.sidePot = undefined
+  action.lastMove = undefined
   action.small = newSmall.id
   action.turn = turn
   group.users = group.users.filter(user => user.sum > group.blind.big)

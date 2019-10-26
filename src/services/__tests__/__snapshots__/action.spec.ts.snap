@@ -787,6 +787,11 @@ Object {
   ],
   "groupID": "group:016650b1-8c11-41e3-b00f-a616469a3b1b",
   "id": "action:7cc3e3d1-3f38-4b04-9d23-9de6372bc142",
+  "lastMove": Object {
+    "type": "allIn",
+    "userID": "user:f7fefb97-1cd6-4507-b312-611d157a65bf",
+    "value": 12,
+  },
   "pot": 22,
   "queued": Object {},
   "round": 0,

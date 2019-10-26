@@ -25,6 +25,7 @@ export interface ActionRunning extends Action {
   communityCards: string[]
   sidePot?: { id: User['id']; sum: number }[]
   winners?: User['id'][][]
+  lastMove?: NewAction & { userID: User['id'] }
 }
 
 export type Deck = Tuple<MaybeNull<string>, 52>

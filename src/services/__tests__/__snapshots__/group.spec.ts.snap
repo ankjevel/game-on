@@ -85,6 +85,7 @@ Object {
   ],
   "groupID": "foo",
   "id": "action:6e002e4c-c194-42ab-aa15-f0aa6a8215e3",
+  "lastMove": undefined,
   "pot": 6,
   "queued": Object {},
   "round": 0,
