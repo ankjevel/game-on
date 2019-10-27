@@ -75,8 +75,15 @@ export const newAction = async ({
   await push({ actionID, userID, groupID, newAction })
 }
 
-const applyAction = (userAction: NewActionEnum, action: ActionRunning) =>
-  action.round === 0 && (userAction === 'call' || userAction === 'check')
+const applyAction = (
+  userAction: NewActionEnum,
+  action: ActionRunning,
+  bet: number,
+  blind: number
+) =>
+  action.round === 0 &&
+  (userAction === 'call' || userAction === 'check') &&
+  bet === blind
     ? 'bet'
     : userAction
 
@@ -246,7 +253,7 @@ export const handleUpdate = async (
         return
       }
 
-      player.status = applyAction('call', action)
+      player.status = applyAction('call', action, player.bet, group.blind.big)
 
       playerMove.type = player.status
 
@@ -273,7 +280,7 @@ export const handleUpdate = async (
       }
 
       action.big = userID
-      player.status = applyAction('raise', action)
+      player.status = applyAction('raise', action, player.bet, group.blind.big)
       playerMove.type = player.status
       playerMove.value = player.bet - currentAnte
       break
@@ -352,7 +359,7 @@ export const handleUpdate = async (
         }
       }
 
-      player.status = applyAction('check', action)
+      player.status = applyAction('check', action, player.bet, group.blind.big)
       playerMove.type = player.status
       break
     }
