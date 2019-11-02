@@ -296,6 +296,14 @@ export const sortHands = (turn: ActionRunning['turn']) => {
         const _a = order.splice(order.indexOf(a), 1).pop() as any
         const _b = order.splice(order.indexOf(b), 1).pop() as any
 
+        if (_a == null) {
+          return -1
+        }
+
+        if (_b == null) {
+          return 1
+        }
+
         const insertInto = order.length
           ? getHandOrder(index)(_a, order[0] as any)
           : index
@@ -323,6 +331,7 @@ export const sortHands = (turn: ActionRunning['turn']) => {
       }
 
       const { index, insertInto, data } = tie
+
       for (const element of data) {
         sorted[index].splice(sorted[index].indexOf(element as any), 1)
       }
@@ -336,6 +345,7 @@ export const sortHands = (turn: ActionRunning['turn']) => {
       }
 
       const order = getHandOrder(next)(data[0], data[1])
+
       if (order === 0) {
         tied.push({ index: next, insertInto, data })
       } else {

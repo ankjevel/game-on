@@ -11,6 +11,7 @@ import * as dataStore from '../dataStore'
 import * as drawFixture from '../__fixtures__/draw.fixture'
 import * as betFoldAllInFixture from '../__fixtures__/bet-fold-all-in.fixture'
 import * as fourAllInFixture from '../__fixtures__/four-all-in.fixture'
+import * as brokenGameFixture from '../__fixtures__/broken-game.fixture'
 
 jest.mock('../dataStore')
 jest.mock('../session')
@@ -250,6 +251,37 @@ describe('#handleUpdate', () => {
 
     expect(action).toMatchSnapshot()
     expect(group).toMatchSnapshot()
+  })
+
+  describe('broken game', () => {
+    beforeEach(() => {
+      action = clone(brokenGameFixture.action)
+      users = clone(brokenGameFixture.users)
+      group = clone(brokenGameFixture.group)
+    })
+
+    it('should not break', async () => {
+      const message = {
+        newAction: { type: 'check' },
+        userID: 'user:33510cde-e65d-4d7b-91ab-8de29db49af6',
+      } as Message
+
+      await actionService.handleUpdate(action, group, message)
+
+      expect(action.winners).toMatchInlineSnapshot(`
+        Array [
+          Array [
+            "user:0261a93a-fcf3-41ed-bfb3-b6ad606f484c",
+          ],
+          Array [
+            "user:33510cde-e65d-4d7b-91ab-8de29db49af6",
+          ],
+          Array [
+            "user:ae95d3e8-bed7-48ee-b9ec-843eae17bb9e",
+          ],
+        ]
+      `)
+    })
   })
 })
 
