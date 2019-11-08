@@ -409,4 +409,47 @@ describe('#sortHands', () => {
       )
     ).toEqual([['user:player-2'], ['user:player-1']])
   })
+
+  describe('winners', () => {
+    it('gives the win to the one with the highest kicker', () => {
+      expect(
+        cards.sortHands(
+          generate(
+            toHex([
+              Diamonds | 14,
+              Spades | 9,
+              Clubs | 9,
+              Diamonds | 9,
+              Hearts | 9,
+            ]),
+            [
+              ['player 2', [Spades | 14, Clubs | 14]],
+              ['player 1', [Diamonds | 1, Clubs | 2]],
+            ]
+          )
+        )
+      ).toEqual([['user:player 1'], ['user:player 2']])
+    })
+
+    it('should be a draw between aces', () => {
+      const generated = generate(
+        toHex([Spades | 9, Clubs | 7, Diamonds | 7, Spades | 13, Hearts | 13]),
+        [
+          ['10 high', [Hearts | 10, Hearts | 4]],
+          ['king high', [Hearts | 14, Diamonds | 10]],
+          ['ace high, then 3', [Clubs | 1, Hearts | 3]],
+          ['ace high, then 4', [Hearts | 1, Clubs | 4]],
+        ]
+      )
+
+      expect(cards.sortHands(generated)).toEqual([
+        expect.arrayContaining([
+          'user:ace high, then 3',
+          'user:ace high, then 4',
+        ]),
+        ['user:king high'],
+        ['user:10 high'],
+      ])
+    })
+  })
 })

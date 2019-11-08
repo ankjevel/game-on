@@ -271,13 +271,13 @@ describe('#handleUpdate', () => {
       expect(action.winners).toMatchInlineSnapshot(`
         Array [
           Array [
+            "user:ae95d3e8-bed7-48ee-b9ec-843eae17bb9e",
+          ],
+          Array [
             "user:0261a93a-fcf3-41ed-bfb3-b6ad606f484c",
           ],
           Array [
             "user:33510cde-e65d-4d7b-91ab-8de29db49af6",
-          ],
-          Array [
-            "user:ae95d3e8-bed7-48ee-b9ec-843eae17bb9e",
           ],
         ]
       `)
